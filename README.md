@@ -1,2 +1,2 @@
-# DiscordBugBot
-A Discord bot for keeping track of issue tickets in your server
+# e-bot
+A Discord bot for keeping track of when people are available
