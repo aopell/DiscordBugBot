@@ -4,7 +4,7 @@ using System.Text;
 
 namespace DiscordBugBot.Models
 {
-    public class Bug
+    public class Issue
     {
         public long Id { get; set; }
         public ulong GuildId { get; set; }
@@ -16,24 +16,23 @@ namespace DiscordBugBot.Models
         public string Description { get; set; }
         public ulong Author { get; set; }
         public ulong Assignee { get; set; }
-        public BugStatus Status { get; set; }
-        public BugPriority Priority { get; set; }
+        public IssueStatus Status { get; set; }
+        public IssuePriority Priority { get; set; }
         public DateTimeOffset CreatedTimestamp { get; set; }
         public DateTimeOffset LastUpdatedTimestamp { get; set; }
     }
 
-    public enum BugStatus
+    public enum IssueStatus
     {
-        Proposed,
         ToDo,
         InProgress,
         Done,
         Duplicate,
         Invalid,
-        Declined
+        WontFix
     }
 
-    public enum BugPriority
+    public enum IssuePriority
     {
         Low,
         Medium,

@@ -4,9 +4,10 @@ using System.Text;
 
 namespace DiscordBugBot.Models
 {
-    public class BugCategory
+    public class IssueCategory
     {
         public long Id { get; set; }
+        public ulong GuildId { get; set; }
         public string Name { get; set; }
         public string Prefix { get; set; }
         public int NextNumber { get; set; }

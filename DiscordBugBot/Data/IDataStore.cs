@@ -5,15 +5,21 @@ namespace DiscordBugBot.Data
 {
     public interface IDataStore
     {
-        void SaveBug(Bug bug);
-        void SaveBugCategory(BugCategory category);
-        Bug GetBugById(long id);
-        Bug GetBugByCategory(BugCategory category, int number);
-        IEnumerable<Bug> GetBugs(ulong guild, BugCategory category = null, BugStatus? status = null, ulong? assignee = null, ulong? author = null);
-        IEnumerable<Bug> GetOpenBugs(ulong guild, BugCategory category = null, ulong? assignee = null, ulong? author = null);
-        BugCategory GetCategory(ulong guild, string name);
-        IEnumerable<BugCategory> GetCategories(ulong guild);
+        void CreateIssue(Issue issue);
+        void UpdateIssue(Issue issue);
+        void CreateCategory(IssueCategory category);
+        void UpdateCategory(IssueCategory category);
+        Issue GetIssueById(long id);
+        Issue GetIssueByCategory(IssueCategory category, int number);
+        IEnumerable<Issue> GetIssues(ulong guild, IssueCategory category = null, IssueStatus? status = null, ulong? assignee = null, ulong? author = null);
+        IEnumerable<Issue> GetOpenIssues(ulong guild, IssueCategory category = null, ulong? assignee = null, ulong? author = null);
+        IssueCategory GetCategory(ulong guild, string name);
+        IEnumerable<IssueCategory> GetCategories(ulong guild);
         GuildOptions GetOptions(ulong guild);
-        void SaveOptions(GuildOptions options);
+        void CreateOptions(GuildOptions options);
+        void UpdateOptions(GuildOptions options);
+        IEnumerable<Proposal> GetProposals(ulong guild, ulong channel, ulong message);
+        void CreateProposal(Proposal proposal);
+        void UpdateProposals(IEnumerable<Proposal> proposals);
     }
 }
