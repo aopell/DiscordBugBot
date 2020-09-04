@@ -10,7 +10,8 @@ namespace DiscordBugBot.Data
         void CreateCategory(IssueCategory category);
         void UpdateCategory(IssueCategory category);
         Issue GetIssueById(long id);
-        Issue GetIssueByCategory(IssueCategory category, int number);
+        Issue GetIssueByMessage(ulong guild, ulong channel, ulong message);
+        Issue GetIssueByCategory(IssueCategory category, string number);
         IEnumerable<Issue> GetIssues(ulong guild, IssueCategory category = null, IssueStatus? status = null, ulong? assignee = null, ulong? author = null);
         IEnumerable<Issue> GetOpenIssues(ulong guild, IssueCategory category = null, ulong? assignee = null, ulong? author = null);
         IssueCategory GetCategory(ulong guild, string name);

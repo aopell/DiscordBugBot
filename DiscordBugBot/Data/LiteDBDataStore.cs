@@ -56,7 +56,14 @@ namespace DiscordBugBot.Data
             return issues.FindOne(x => x.Id == id);
         }
 
-        public Issue GetIssueByCategory(IssueCategory category, int number)
+        public Issue GetIssueByMessage(ulong guild, ulong channel, ulong message)
+        {
+            using var db = new LiteDatabase(FilePath);
+            var issues = db.GetCollection<Issue>(IssueCollectionName);
+            return issues.FindOne(x => x.GuildId == guild && x.ChannelId == channel && x.MessageId == message);
+        }
+
+        public Issue GetIssueByCategory(IssueCategory category, string number)
         {
             using var db = new LiteDatabase(FilePath);
             var issues = db.GetCollection<Issue>(IssueCollectionName);

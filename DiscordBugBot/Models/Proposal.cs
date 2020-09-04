@@ -12,12 +12,12 @@ namespace DiscordBugBot.Models
         public ulong MessageId { get; set; }
         public string Category { get; set; }
         public ProposalStatus Status { get; set; }
+        public int ApprovalVotes { get; set; }
     }
 
     public enum ProposalStatus
     {
         Proposed,
-        Approved,
-        Denied
+        Approved
     }
 }

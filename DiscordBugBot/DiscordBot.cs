@@ -3,6 +3,7 @@ using Discord.Commands;
 using Discord.WebSocket;
 using DiscordBugBot.Commands;
 using DiscordBugBot.Config;
+using DiscordBugBot.Data;
 using DiscordBugBot.Helpers;
 using System;
 using System.Collections.Generic;
@@ -17,6 +18,7 @@ namespace DiscordBugBot
         public DiscordSocketClient Client { get; private set; }
         public Secret Secret { get; private set; }
         public Options Options { get; private set; }
+        public IDataStore DataStore { get; } = new LiteDbDataStore("issues.db");
 
         public static async Task Main()
         {
@@ -71,7 +73,8 @@ namespace DiscordBugBot
         private async Task Client_ReactionAdded(Cacheable<IUserMessage, ulong> cachedMessage, ISocketMessageChannel channel, SocketReaction reaction)
         {
             var message = await cachedMessage.GetOrDownloadAsync();
-            await ReactionMessageHelper.HandleReactionMessage(channel, Client.CurrentUser, reaction, message);
+            _ = ReactionMessageHelper.HandleReactionMessage(channel, Client.CurrentUser, reaction, message);
+            _ = IssueConfirmationHelper.HandleMessageReaction(channel, reaction, message);
         }
 
         private static void CurrentDomain_ProcessExit(object sender, EventArgs e)

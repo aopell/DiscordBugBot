@@ -11,11 +11,11 @@ namespace DiscordBugBot.Models
         public ulong ChannelId { get; set; }
         public ulong MessageId { get; set; }
         public string Category { get; set; }
-        public int Number { get; set; }
+        public string Number { get; set; }
         public string Title { get; set; }
         public string Description { get; set; }
         public ulong Author { get; set; }
-        public ulong Assignee { get; set; }
+        public ulong? Assignee { get; set; }
         public IssueStatus Status { get; set; }
         public IssuePriority Priority { get; set; }
         public DateTimeOffset CreatedTimestamp { get; set; }

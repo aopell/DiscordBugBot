@@ -5,13 +5,16 @@ using System.Runtime.Caching;
 using System.Threading.Tasks;
 using Discord;
 using Discord.WebSocket;
-using DiscordBugBot.Helpers;
-using ReactionAction = System.Func<DiscordBugBot.Helpers.ReactionMessage, Discord.WebSocket.SocketReaction, System.Threading.Tasks.Task>;
-using CustomReactionAction = System.Func<DiscordBugBot.Helpers.ReactionMessage, Discord.WebSocket.SocketReaction, System.Threading.Tasks.Task>;
-using PageAction = System.Func<DiscordBugBot.Helpers.PaginatedMessage, System.Threading.Tasks.Task<(string, Discord.Embed)>>;
+using DiscordBugBot.Tools;
 
 namespace DiscordBugBot.Helpers
 {
+    public delegate Task ReactionAction(ReactionMessage msg, SocketReaction reaction);
+
+    public delegate Task CustomReactionAction(ReactionMessage msg, SocketReaction reaction);
+
+    public delegate Task<(string, Embed)> PageAction(PaginatedMessage msg);
+
     public static class ReactionMessageHelper
     {
         private static readonly ObjectCache ReactionMessageCache = new MemoryCache("reactionMessages");
@@ -84,8 +87,8 @@ namespace DiscordBugBot.Helpers
                 message,
                 new List<(string, ReactionAction)>
                 {
-                    ("✅", onPositiveResponse),
-                    ("❌", onNegativeResponse)
+                    (Strings.GreenCheckEmoji, onPositiveResponse),
+                    (Strings.RedXEmoji, onNegativeResponse)
                 },
                 allowMultipleReactions,
                 false,
