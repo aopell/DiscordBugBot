@@ -9,8 +9,9 @@ namespace DiscordBugBot.Helpers
 {
     public static class IssueEmbedHelper
     {
-        public static Embed GenerateInlineIssueEmbed(Issue issue, GuildOptions options, IssueCategory category = null)
+        public static Embed GenerateInlineIssueEmbed(Issue issue, GuildOptions options = null, IssueCategory category = null)
         {
+            options ??= DiscordBot.MainInstance.DataStore.GetOptions(issue.GuildId);
             return GenerateIssueEmbed(issue, category, options, true);
         }
 
@@ -24,7 +25,7 @@ namespace DiscordBugBot.Helpers
             category ??= DiscordBot.MainInstance.DataStore.GetCategory(issue.GuildId, issue.Category);
 
             var embed = new EmbedBuilder()
-                        .WithTitle($"{category?.EmojiIcon} {issue.Number}: {issue.Title}")
+                        .WithTitle($"{category?.EmojiIcon} `{issue.Number}` {issue.Title}")
                         .WithDescription(issue.Description)
                         .WithTimestamp(issue.LastUpdatedTimestamp)
                         .WithColor(Strings.StatusColors[issue.Status])
@@ -39,6 +40,12 @@ namespace DiscordBugBot.Helpers
                             {
                                 Name = "Priority",
                                 Value = $"{Strings.PriorityEmojis[issue.Priority]} {issue.Priority}",
+                                IsInline = true
+                            },
+                            new EmbedFieldBuilder
+                            {
+                                Name = "Author",
+                                Value = DiscordBot.MainInstance.Client.GetUser(issue.Author).ToString(),
                                 IsInline = true
                             },
                             new EmbedFieldBuilder

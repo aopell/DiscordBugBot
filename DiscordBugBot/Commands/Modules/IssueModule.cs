@@ -27,7 +27,25 @@ namespace DiscordBugBot.Commands.Modules
 
             GuildOptions options = Context.Bot.DataStore.GetOptions(Context.Guild.Id);
 
-            IssueConfirmationHelper.CreateIssue(proposal, Context.Channel as ISocketMessageChannel, Context.Message, options, title: title, description: description);
+            if (options == null)
+            {
+                throw new CommandExecutionException("Please set up the server before trying to create issues. Run the `setup` command to get started.");
+            }
+
+            Context.Bot.DataStore.CreateProposal(proposal);
+            await IssueConfirmationHelper.CreateIssue(proposal, Context.Channel, Context.Message, options, title: title, description: description);
+        }
+
+        [Command]
+        [Summary("Gets an issue")]
+        public async Task Get(string number)
+        {
+            Issue issue = Context.Bot.DataStore.GetIssueByNumber(number);
+            if (issue == null)
+            {
+                throw new CommandExecutionException("That issue does not exist");
+            }
+            await Context.Channel.SendMessageAsync(embed: IssueEmbedHelper.GenerateInlineIssueEmbed(issue));
         }
     }
 }

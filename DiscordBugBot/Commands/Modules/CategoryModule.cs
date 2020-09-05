@@ -32,7 +32,7 @@ namespace DiscordBugBot.Commands.Modules
 
             Context.Bot.DataStore.CreateCategory(category);
 
-            await Context.Channel.SendMessageAsync($"Category `{category.Name}` created. The first issue in this category will be **{category.EmojiIcon} {category.Prefix}-{category.NextNumber}**");
+            await Context.Channel.SendMessageAsync($"Category `{category.Name}` created. The first issue in this category will be {category.EmojiIcon} `{category.Prefix}-{category.NextNumber}`");
         }
 
         [Command("list")]
