@@ -14,6 +14,7 @@ namespace DiscordBugBot.Helpers
     public static class IssueConfirmationHelper
     {
         private static IDataStore DataStore => DiscordBot.MainInstance.DataStore;
+        private static DiscordSocketClient Client => DiscordBot.MainInstance.Client;
 
         public static async Task HandleMessageReaction(ISocketMessageChannel channel, SocketReaction reaction, IUserMessage message)
         {
@@ -24,7 +25,7 @@ namespace DiscordBugBot.Helpers
 
             var options = DataStore.GetOptions(gchannel.GuildId);
             if (options is null) return;
-            var user = message.Author as IGuildUser;
+            var user = reaction.User.Value as IGuildUser;
 
             if (GetModStatus(user, options, out bool mod)) return;
 
@@ -94,27 +95,28 @@ namespace DiscordBugBot.Helpers
             if (mod)
             {
                 proposal.Status = ProposalStatus.Approved;
-                _ = CreateIssue(proposal, channel, message);
+                _ = CreateIssue(proposal, channel, message, options);
             }
             else
             {
                 proposal.ApprovalVotes++;
                 if (proposal.ApprovalVotes >= options.MinApprovalVotes)
                 {
-                    _ = CreateIssue(proposal, channel, message);
+                    _ = CreateIssue(proposal, channel, message, options);
                 }
             }
 
             DataStore.UpdateProposals(props);
         }
 
-        private static async Task CreateIssue(Proposal proposal, ISocketMessageChannel channel, IUserMessage message)
+        public static async Task CreateIssue(Proposal proposal, ISocketMessageChannel channel, IUserMessage message, GuildOptions options, string title = null, string description = null)
         {
             var category = DataStore.GetCategory(proposal.GuildId, proposal.Category);
             int number = category.NextNumber;
             category.NextNumber++;
             DataStore.UpdateCategory(category);
             var now = DateTimeOffset.Now;
+
             var issue = new Issue
             {
                 GuildId = proposal.GuildId,
@@ -122,19 +124,26 @@ namespace DiscordBugBot.Helpers
                 MessageId = proposal.MessageId,
                 Category = proposal.Category,
                 Status = IssueStatus.ToDo,
-                Title = "",
+                Title = title ?? "",
                 Number = $"{category.Prefix}-{number}",
                 Priority = IssuePriority.Medium,
                 Assignee = null,
                 Author = message.Author.Id,
                 CreatedTimestamp = now,
                 LastUpdatedTimestamp = now,
-                Description = message.Content
+                Description = description ?? message.Content
             };
+
+            if (options.LoggingChannelId.HasValue)
+            {
+                var logchannel = (ISocketMessageChannel)Client.GetChannel(options.LoggingChannelId.Value);
+                var logmessage = await logchannel.SendMessageAsync(embed: IssueEmbedHelper.GenerateLogIssueEmbed(issue, category));
+                issue.LogMessageId = logmessage.Id;
+            }
 
             DataStore.CreateIssue(issue);
 
-            await channel.SendMessageAsync("Approved!", embed: IssueEmbedHelper.GenerateIssueEmbed(issue, category));
+            await channel.SendMessageAsync("Approved!", embed: IssueEmbedHelper.GenerateInlineIssueEmbed(issue, options, category));
         }
     }
 }

@@ -6,7 +6,7 @@ namespace DiscordBugBot.Models
 {
     public class IssueCategory
     {
-        public long Id { get; set; }
+        public Guid Id { get; set; }
         public ulong GuildId { get; set; }
         public string Name { get; set; }
         public string Prefix { get; set; }

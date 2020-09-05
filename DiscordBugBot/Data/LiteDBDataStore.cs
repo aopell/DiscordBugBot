@@ -49,11 +49,11 @@ namespace DiscordBugBot.Data
             categories.Update(category);
         }
 
-        public Issue GetIssueById(long id)
+        public Issue GetIssueByNumber(string number)
         {
             using var db = new LiteDatabase(FilePath);
             var issues = db.GetCollection<Issue>(IssueCollectionName);
-            return issues.FindOne(x => x.Id == id);
+            return issues.FindOne(x => x.Number == number);
         }
 
         public Issue GetIssueByMessage(ulong guild, ulong channel, ulong message)
@@ -61,6 +61,13 @@ namespace DiscordBugBot.Data
             using var db = new LiteDatabase(FilePath);
             var issues = db.GetCollection<Issue>(IssueCollectionName);
             return issues.FindOne(x => x.GuildId == guild && x.ChannelId == channel && x.MessageId == message);
+        }
+
+        public Issue GetIssueByLogMessage(ulong guild, ulong logmessage)
+        {
+            using var db = new LiteDatabase(FilePath);
+            var issues = db.GetCollection<Issue>(IssueCollectionName);
+            return issues.FindOne(x => x.GuildId == guild && x.LogMessageId == logmessage);
         }
 
         public Issue GetIssueByCategory(IssueCategory category, string number)

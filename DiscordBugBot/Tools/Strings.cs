@@ -25,5 +25,23 @@ namespace DiscordBugBot.Tools
             [IssueStatus.Invalid] = RedXEmoji,
             [IssueStatus.WontFix] = IndeterminateEmoji
         };
+
+        public static readonly Dictionary<IssueStatus, uint> StatusColors = new Dictionary<IssueStatus, uint>
+        {
+            [IssueStatus.ToDo] = 0xFF7F27,
+            [IssueStatus.InProgress] = 0x3B88C3,
+            [IssueStatus.Done] = 0x2CD261,
+            [IssueStatus.Duplicate] = 0xC1694F,
+            [IssueStatus.Invalid] = 0xEF5A73,
+            [IssueStatus.WontFix] = 0xFFB144
+        };
+
+        public static readonly Dictionary<IssuePriority, string> PriorityEmojis = new Dictionary<IssuePriority, string>
+        {
+            [IssuePriority.Low] = "🔵",
+            [IssuePriority.Medium] = "🟢",
+            [IssuePriority.High] = "🟠",
+            [IssuePriority.VeryHigh] = "🔴"
+        };
     }
 }

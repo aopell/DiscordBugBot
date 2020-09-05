@@ -15,9 +15,9 @@ namespace DiscordBugBot.Helpers
         {
             EmbedBuilder embed = new EmbedBuilder();
             StackTrace trace = new StackTrace(ex, true);
-            string[] fileNames = trace.GetFrame(0).GetFileName().Split('/', '\\');
-            string fileName = fileNames?[fileNames.Length - 1];
-            int lineNo = trace.GetFrame(0).GetFileLineNumber();
+            string[] fileNames = trace.GetFrame(0)?.GetFileName()?.Split('/', '\\');
+            string fileName = fileNames?[^1];
+            int lineNo = trace.GetFrame(0)?.GetFileLineNumber() ?? 0;
 
             if (ex is CommandExecutionException cee)
             {

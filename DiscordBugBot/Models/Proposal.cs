@@ -6,7 +6,7 @@ namespace DiscordBugBot.Models
 {
     public class Proposal
     {
-        public long Id { get; set; }
+        public Guid Id { get; set; }
         public ulong GuildId { get; set; }
         public ulong ChannelId { get; set; }
         public ulong MessageId { get; set; }

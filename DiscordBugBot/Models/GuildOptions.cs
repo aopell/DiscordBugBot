@@ -6,8 +6,7 @@ namespace DiscordBugBot.Models
 {
     public class GuildOptions
     {
-        // Need separate DB ID since LiteDB doesn't support ulong IDs
-        public int Id { get; set; }
+        public Guid Id { get; set; }
         public ulong GuildId { get; set; }
         public ulong ModeratorRoleId { get; set; }
         public ulong VoterRoleId { get; set; }

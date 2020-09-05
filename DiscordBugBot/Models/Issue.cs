@@ -6,10 +6,11 @@ namespace DiscordBugBot.Models
 {
     public class Issue
     {
-        public long Id { get; set; }
+        public Guid Id { get; set; }
         public ulong GuildId { get; set; }
         public ulong ChannelId { get; set; }
         public ulong MessageId { get; set; }
+        public ulong LogMessageId { get; set; }
         public string Category { get; set; }
         public string Number { get; set; }
         public string Title { get; set; }
