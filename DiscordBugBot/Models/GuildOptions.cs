@@ -13,5 +13,6 @@ namespace DiscordBugBot.Models
         public int MinApprovalVotes { get; set; }
         public ulong? TrackerChannelId { get; set; }
         public ulong? LoggingChannelId { get; set; }
+        public string GithubRepository { get; set; }
     }
 }
