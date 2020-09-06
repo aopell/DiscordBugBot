@@ -281,7 +281,7 @@ namespace DiscordBugBot.Helpers
 
         public override async Task RunAction(SocketReaction reaction)
         {
-            switch (reaction.ToString())
+            switch (reaction.Emote.ToString())
             {
                 case FirstPage:
                     if (CurrentPage == 1) return;
