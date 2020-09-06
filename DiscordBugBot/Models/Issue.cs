@@ -17,6 +17,8 @@ namespace DiscordBugBot.Models
         public string Description { get; set; }
         public ulong Author { get; set; }
         public ulong? Assignee { get; set; }
+        public string ImageUrl { get; set; }
+        public string ThumbnailUrl { get; set; }
         public IssueStatus Status { get; set; }
         public IssuePriority Priority { get; set; }
         public DateTimeOffset CreatedTimestamp { get; set; }

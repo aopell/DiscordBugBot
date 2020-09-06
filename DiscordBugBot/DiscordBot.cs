@@ -33,6 +33,7 @@ namespace DiscordBugBot
             MainInstance.Client.Log += MainInstance.Log;
             MainInstance.Client.Ready += MainInstance.Client_Ready;
             MainInstance.Client.ReactionAdded += MainInstance.Client_ReactionAdded;
+            MainInstance.Client.MessageReceived += MainInstance.Client_MessageReceived;
 
             if (MainInstance.Secret?.Token is null)
             {
@@ -57,6 +58,12 @@ namespace DiscordBugBot
             await ch.InstallCommandsAsync();
 
             await Task.Delay(-1);
+        }
+
+        private Task Client_MessageReceived(SocketMessage message)
+        {
+            _ = IssueInlineMentionHelper.ProcessMessageText(message);
+            return Task.CompletedTask;
         }
 
         private Task Client_Ready()

@@ -32,6 +32,7 @@ namespace DiscordBugBot.Data
         {
             using var db = new LiteDatabase(FilePath);
             var issues = db.GetCollection<Issue>(IssueCollectionName);
+            issue.LastUpdatedTimestamp = DateTimeOffset.Now;
             issues.Update(issue);
         }
 
@@ -49,11 +50,11 @@ namespace DiscordBugBot.Data
             categories.Update(category);
         }
 
-        public Issue GetIssueByNumber(string number)
+        public Issue GetIssueByNumber(ulong guild, string number)
         {
             using var db = new LiteDatabase(FilePath);
             var issues = db.GetCollection<Issue>(IssueCollectionName);
-            return issues.FindOne(x => x.Number == number);
+            return issues.FindOne(x => x.GuildId == guild && x.Number == number);
         }
 
         public Issue GetIssueByMessage(ulong guild, ulong channel, ulong message)

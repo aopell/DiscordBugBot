@@ -9,7 +9,7 @@ namespace DiscordBugBot.Data
         void UpdateIssue(Issue issue);
         void CreateCategory(IssueCategory category);
         void UpdateCategory(IssueCategory category);
-        Issue GetIssueByNumber(string number);
+        Issue GetIssueByNumber(ulong guild, string number);
         Issue GetIssueByMessage(ulong guild, ulong channel, ulong message);
         Issue GetIssueByLogMessage(ulong guild, ulong logmessage);
         Issue GetIssueByCategory(IssueCategory category, string number);

@@ -131,7 +131,9 @@ namespace DiscordBugBot.Helpers
                 Author = message.Author.Id,
                 CreatedTimestamp = now,
                 LastUpdatedTimestamp = now,
-                Description = description ?? message.Content
+                Description = description ?? message.Content,
+                ThumbnailUrl = null,
+                ImageUrl = message.Attachments.FirstOrDefault()?.Url
             };
 
             if (options.LoggingChannelId.HasValue)
