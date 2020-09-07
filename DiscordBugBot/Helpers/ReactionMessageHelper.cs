@@ -136,7 +136,7 @@ namespace DiscordBugBot.Helpers
 
         public static async Task HandleReactionMessage(
             ISocketMessageChannel channel,
-            SocketSelfUser botUser,
+            ISelfUser botUser,
             SocketReaction reaction,
             IUserMessage message
         )

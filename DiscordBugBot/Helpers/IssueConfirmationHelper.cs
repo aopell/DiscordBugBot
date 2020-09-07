@@ -95,57 +95,18 @@ namespace DiscordBugBot.Helpers
             if (mod)
             {
                 proposal.Status = ProposalStatus.Approved;
-                _ = CreateIssue(proposal, channel, message, options);
+                _ = IssueModificationHelper.CreateIssue(proposal, channel, message, options);
             }
             else
             {
                 proposal.ApprovalVotes++;
                 if (proposal.ApprovalVotes >= options.MinApprovalVotes)
                 {
-                    _ = CreateIssue(proposal, channel, message, options);
+                    _ = IssueModificationHelper.CreateIssue(proposal, channel, message, options);
                 }
             }
 
             DataStore.UpdateProposals(props);
-        }
-
-        public static async Task CreateIssue(Proposal proposal, ISocketMessageChannel channel, IUserMessage message, GuildOptions options, string title = null, string description = null)
-        {
-            var category = DataStore.GetCategory(proposal.GuildId, proposal.Category);
-            int number = category.NextNumber;
-            category.NextNumber++;
-            DataStore.UpdateCategory(category);
-            var now = DateTimeOffset.Now;
-
-            var issue = new Issue
-            {
-                GuildId = proposal.GuildId,
-                ChannelId = proposal.ChannelId,
-                MessageId = proposal.MessageId,
-                Category = proposal.Category,
-                Status = IssueStatus.ToDo,
-                Title = title ?? "",
-                Number = $"{category.Prefix}-{number}",
-                Priority = IssuePriority.Medium,
-                Assignee = null,
-                Author = message.Author.Id,
-                CreatedTimestamp = now,
-                LastUpdatedTimestamp = now,
-                Description = description ?? message.Content,
-                ThumbnailUrl = null,
-                ImageUrl = message.Attachments.FirstOrDefault()?.Url
-            };
-
-            if (options.LoggingChannelId.HasValue)
-            {
-                var logchannel = (ISocketMessageChannel)Client.GetChannel(options.LoggingChannelId.Value);
-                var logmessage = await logchannel.SendMessageAsync(embed: IssueEmbedHelper.GenerateLogIssueEmbed(issue, category));
-                issue.LogMessageId = logmessage.Id;
-            }
-
-            DataStore.CreateIssue(issue);
-
-            await channel.SendMessageAsync("Approved!", embed: IssueEmbedHelper.GenerateInlineIssueEmbed(issue, options, category));
         }
     }
 }

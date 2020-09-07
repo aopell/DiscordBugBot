@@ -81,18 +81,5 @@ namespace DiscordBugBot.Helpers
 
             return embed.Build();
         }
-
-        public static async Task UpdateLogIssueEmbed(Issue issue, IssueCategory category = null, GuildOptions options = null)
-        {
-            options ??= DiscordBot.MainInstance.DataStore.GetOptions(issue.GuildId);
-            if (options?.LoggingChannelId is null) return;
-
-            if (!(DiscordBot.MainInstance.Client.GetChannel(options.LoggingChannelId.Value) is IMessageChannel logChannel)) return;
-
-            if (!(await logChannel.GetMessageAsync(issue.LogMessageId) is IUserMessage logMessage)) return;
-
-            Embed embed = GenerateLogIssueEmbed(issue, category);
-            await logMessage.ModifyAsync(mp => mp.Embed = embed);
-        }
     }
 }
