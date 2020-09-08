@@ -18,13 +18,13 @@ namespace DiscordBugBot.Helpers
 
         public static async Task HandleMessageReaction(ISocketMessageChannel channel, SocketReaction reaction, IUserMessage message)
         {
-            if (!(channel is IGuildChannel gchannel)) return;
+            if ((reaction.User.GetValueOrDefault()?.IsBot ?? false) || !(channel is IGuildChannel gchannel)) return;
             ulong gid = gchannel.GuildId;
             ulong cid = channel.Id;
             ulong mid = message.Id;
 
             var options = DataStore.GetOptions(gchannel.GuildId);
-            if (options is null) return;
+            if (options?.AllowedChannels is null || !options.AllowedChannels.Contains(channel.Id)) return;
             var user = reaction.User.Value as IGuildUser;
 
             if (GetVoterStatus(user, options, out bool mod)) return;

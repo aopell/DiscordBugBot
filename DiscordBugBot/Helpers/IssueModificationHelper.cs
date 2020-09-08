@@ -33,7 +33,7 @@ namespace DiscordBugBot.Helpers
                 Status = IssueStatus.ToDo,
                 Title = title ?? "",
                 Number = $"{category.Prefix}-{number}",
-                Priority = IssuePriority.Medium,
+                Priority = IssuePriority.Low,
                 Assignee = null,
                 Author = message.Author.Id,
                 CreatedTimestamp = now,
@@ -62,7 +62,16 @@ namespace DiscordBugBot.Helpers
             IssueCategory category = null;
             issue.Title = args.Title ?? issue.Title;
             issue.Description = args.Description ?? issue.Description;
-            issue.Assignee = args.Assignee?.Id ?? issue.Assignee;
+
+            if (ReferenceEquals(args.Assignee, IssueUpdateArgs.NoUser))
+            {
+                issue.Assignee = null;
+            }
+            else
+            {
+                issue.Assignee = args.Assignee?.Id ?? issue.Assignee;
+            }
+
             issue.ImageUrl = args.Image ?? issue.ImageUrl;
             issue.ThumbnailUrl = args.Thumbnail ?? issue.ThumbnailUrl;
 

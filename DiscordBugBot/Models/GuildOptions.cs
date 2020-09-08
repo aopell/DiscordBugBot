@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace DiscordBugBot.Models
@@ -14,5 +15,6 @@ namespace DiscordBugBot.Models
         public ulong? TrackerChannelId { get; set; }
         public ulong? LoggingChannelId { get; set; }
         public string GithubRepository { get; set; }
+        public List<ulong> AllowedChannels { get; set; } = new List<ulong>();
     }
 }

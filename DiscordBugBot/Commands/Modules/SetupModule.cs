@@ -57,5 +57,38 @@ namespace DiscordBugBot.Commands.Modules
 
             await Context.Channel.SendMessageAsync("Settings created or updated successfully");
         }
+
+        [Group("channel")]
+        public class ChannelSetupModule : ModuleBase<BotCommandContext>
+        {
+            [ModeratorRequired]
+            [Command]
+            [Summary("Sets up the current channel as a valid proposal channel")]
+            public async Task Channel(IMessageChannel channel = null)
+            {
+                channel ??= Context.Channel;
+                var options = Context.Bot.DataStore.GetOptions(Context.Guild.Id);
+                if (options is null) throw new CommandExecutionException("Please run `setup` before running this command");
+                options.AllowedChannels ??= new List<ulong>();
+                if (options.AllowedChannels.Contains(channel.Id)) throw new CommandExecutionException("That channel is already a proposal channel");
+                options.AllowedChannels.Add(channel.Id);
+                Context.Bot.DataStore.UpdateOptions(options);
+                await Context.Channel.SendMessageAsync("Channel set up successfully");
+            }
+
+            [ModeratorRequired]
+            [Command("remove")]
+            [Summary("Removes the current channel from the valid proposal channels")]
+            public async Task Remove(IMessageChannel channel = null)
+            {
+                channel ??= Context.Channel;
+                var options = Context.Bot.DataStore.GetOptions(Context.Guild.Id);
+                if (options is null) throw new CommandExecutionException("Please run `setup` before running this command");
+                options.AllowedChannels ??= new List<ulong>();
+                if (!options.AllowedChannels.Remove(channel.Id)) throw new CommandExecutionException("That channel is not a proposal channel");
+                Context.Bot.DataStore.UpdateOptions(options);
+                await Context.Channel.SendMessageAsync("Channel removed successfully");
+            }
+        }
     }
 }

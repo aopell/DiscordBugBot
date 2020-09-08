@@ -64,11 +64,12 @@ namespace DiscordBugBot.Helpers
 
         private static async Task UnclaimIssue(Issue issue, IUser user)
         {
+            if (issue.Assignee != user.Id) return;
             await IssueModificationHelper.UpdateIssue(
                 issue,
                 new IssueUpdateArgs
                 {
-                    Assignee = null
+                    Assignee = IssueUpdateArgs.NoUser
                 }
             );
         }

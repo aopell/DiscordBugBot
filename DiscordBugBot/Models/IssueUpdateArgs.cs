@@ -17,5 +17,7 @@ namespace DiscordBugBot.Models
         public string Category { get; set; }
         public string Image { get; set; }
         public string Thumbnail { get; set; }
+
+        public static ISelfUser NoUser => DiscordBot.MainInstance.Client.CurrentUser;
     }
 }
