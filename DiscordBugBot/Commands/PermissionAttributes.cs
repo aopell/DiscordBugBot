@@ -15,6 +15,8 @@ namespace DiscordBugBot.Commands
         {
             IGuildUser user = context.User as IGuildUser;
             if (user is null) return Task.FromResult(PreconditionResult.FromError("This command needs to be ran in a server"));
+            if (user.GuildPermissions.ManageGuild) return Task.FromResult(PreconditionResult.FromSuccess());
+
             GuildOptions options = DiscordBot.MainInstance.DataStore.GetOptions(user.GuildId);
             if (options is null) return Task.FromResult(PreconditionResult.FromError("Please run `setup` before using this command"));
 
@@ -30,6 +32,8 @@ namespace DiscordBugBot.Commands
         {
             IGuildUser user = context.User as IGuildUser;
             if (user is null) return Task.FromResult(PreconditionResult.FromError("This command needs to be ran in a server"));
+            if (user.GuildPermissions.ManageGuild) return Task.FromResult(PreconditionResult.FromSuccess());
+
             GuildOptions options = DiscordBot.MainInstance.DataStore.GetOptions(user.GuildId);
             if (options is null) return Task.FromResult(PreconditionResult.FromError("Please run `setup` before using this command"));
 
