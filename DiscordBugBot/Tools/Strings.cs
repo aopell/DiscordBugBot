@@ -7,19 +7,21 @@ namespace DiscordBugBot.Tools
 {
     public static class Strings
     {
-        public const string QuestionEmoji = "<:unknown:706271972983701524>";
         public const string GreenCheckEmoji = "<:ready:706270984973451295>";
-        public const string BlueCheckEmoji = "<:available:706270615312662568>";
         public const string IndeterminateEmoji = "<:maybe:706702223446376517>";
         public const string RedXEmoji = "<:unavailable:706702240467124345>";
-        public const string OrangeStarEmoji = "<:issue:751161593701728406>";
-
-        public const string DenyReaction = "❌";
+        public const string OrangeStarEmoji = "<:to_do:751161593701728406>";
+        public const string OrangeUpArrowEmoji = "<:priority_up:752663760555999392>";
+        public const string BlueDownArrowEmoji = "<:priority_down:752663760556261478>";
+        public const string BlueDotEmoji = "<:in_progress:752696470586654820>";
+        public const string InboxEmoji = "<:claim_issue:752698049595441242>";
+        public const string OutboxEmoji = "<:unclaim_issue:752698049654030437>";
+        public const string GithubEmoji = "<:github:752667639968432238>";
 
         public static readonly Dictionary<IssueStatus, string> StatusEmojis = new Dictionary<IssueStatus, string>
         {
             [IssueStatus.ToDo] = OrangeStarEmoji,
-            [IssueStatus.InProgress] = "⏺️",
+            [IssueStatus.InProgress] = BlueDotEmoji,
             [IssueStatus.Done] = GreenCheckEmoji,
             [IssueStatus.Duplicate] = "🟫",
             [IssueStatus.Invalid] = RedXEmoji,

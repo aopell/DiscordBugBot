@@ -13,6 +13,7 @@ namespace DiscordBugBot.Commands.Modules
     [Group("issue")]
     public class IssueModule : ModuleBase<BotCommandContext>
     {
+        [VoterRequired]
         [Command]
         [Summary("Gets an issue")]
         public async Task Get(string number)
@@ -25,6 +26,7 @@ namespace DiscordBugBot.Commands.Modules
             await Context.Channel.SendMessageAsync(embed: IssueEmbedHelper.GenerateInlineIssueEmbed(issue));
         }
 
+        [ModeratorRequired]
         [Command("create")]
         [Summary("Create an issue")]
         public async Task Create(string category, string title, [Remainder] string description)
@@ -49,6 +51,7 @@ namespace DiscordBugBot.Commands.Modules
             await IssueModificationHelper.CreateIssue(proposal, Context.Channel, Context.Message, options, title: title, description: description);
         }
 
+        [ModeratorRequired]
         [Command("update")]
         [Summary("Updates one or more fields on an issue")]
         public async Task Update(string number, IssueUpdateArgs args)
@@ -61,7 +64,6 @@ namespace DiscordBugBot.Commands.Modules
 
             var (category, changed) = await IssueModificationHelper.UpdateIssue(issue, args);
             await Context.Channel.SendMessageAsync(embed: IssueEmbedHelper.GenerateInlineIssueEmbed(issue, category: category));
-            await IssueLogHelper.UpdateLogIssueEmbed(issue, category);
         }
     }
 }

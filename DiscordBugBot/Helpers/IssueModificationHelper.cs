@@ -47,6 +47,7 @@ namespace DiscordBugBot.Helpers
             {
                 var logchannel = (ISocketMessageChannel)Client.GetChannel(options.LoggingChannelId.Value);
                 var logmessage = await logchannel.SendMessageAsync(embed: IssueEmbedHelper.GenerateLogIssueEmbed(issue, category));
+                _ = logmessage.AddReactionsAsync(IssueLogHelper.IssueLogReactions);
                 issue.LogMessageId = logmessage.Id;
             }
 
@@ -100,6 +101,8 @@ namespace DiscordBugBot.Helpers
             category ??= DataStore.GetCategory(issue.GuildId, issue.Category);
 
             DataStore.UpdateIssue(issue);
+
+            _ = IssueLogHelper.UpdateLogIssueEmbed(issue, category);
 
             return (category, number != issue.Number);
         }

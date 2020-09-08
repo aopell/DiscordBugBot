@@ -82,7 +82,7 @@ namespace DiscordBugBot
             var message = await cachedMessage.GetOrDownloadAsync();
             _ = ReactionMessageHelper.HandleReactionMessage(channel, Client.CurrentUser, reaction, message);
             _ = IssueConfirmationHelper.HandleMessageReaction(channel, reaction, message);
-            _ = IssueLogHelper.HandleLogMessageReaction(channel, reaction, message);
+            _ = IssueLogHelper.HandleLogMessageReaction(channel, reaction, reaction.User.IsSpecified ? reaction.User.Value : null, message);
         }
 
         private static void CurrentDomain_ProcessExit(object sender, EventArgs e)

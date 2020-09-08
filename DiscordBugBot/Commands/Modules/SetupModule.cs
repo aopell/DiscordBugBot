@@ -11,6 +11,7 @@ namespace DiscordBugBot.Commands.Modules
     [Group("setup")]
     public class SetupModule : ModuleBase<BotCommandContext>
     {
+        [RequireUserPermission(GuildPermission.ManageGuild)]
         [Command]
         [Summary("Provides information on how to set up the server")]
         public async Task Setup()
@@ -24,6 +25,7 @@ namespace DiscordBugBot.Commands.Modules
             );
         }
 
+        [RequireUserPermission(GuildPermission.ManageGuild)]
         [Command]
         [Summary("Sets up the server with the given options")]
         public async Task Setup(IMessageChannel issueLogChannel, IMessageChannel dashboardChannel, IRole modRole, IRole voterRole, int minVotes = 3, string githubRepository = null)

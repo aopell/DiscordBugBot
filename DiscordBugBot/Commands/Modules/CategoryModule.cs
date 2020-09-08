@@ -11,6 +11,7 @@ namespace DiscordBugBot.Commands.Modules
     [Group("category")]
     public class CategoryModule : ModuleBase<BotCommandContext>
     {
+        [ModeratorRequired]
         [Command("create")]
         [Summary("Create an issue category")]
         public async Task Create(string name, string prefix, string emoji)
@@ -35,6 +36,7 @@ namespace DiscordBugBot.Commands.Modules
             await Context.Channel.SendMessageAsync($"Category `{category.Name}` created. The first issue in this category will be {category.EmojiIcon} `{category.Prefix}-{category.NextNumber}`");
         }
 
+        [VoterRequired]
         [Command("list")]
         [Summary("List issue categories")]
         public async Task List()

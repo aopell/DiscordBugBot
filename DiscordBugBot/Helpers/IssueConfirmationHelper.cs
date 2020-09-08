@@ -27,7 +27,7 @@ namespace DiscordBugBot.Helpers
             if (options is null) return;
             var user = reaction.User.Value as IGuildUser;
 
-            if (GetModStatus(user, options, out bool mod)) return;
+            if (GetVoterStatus(user, options, out bool mod)) return;
 
             IssueCategory category = GetCategory(reaction, gid);
 
@@ -42,7 +42,7 @@ namespace DiscordBugBot.Helpers
             UpdateProposals(channel, message, mod, proposal, options, props);
         }
 
-        private static bool GetModStatus(IGuildUser user, GuildOptions options, out bool mod)
+        public static bool GetVoterStatus(IGuildUser user, GuildOptions options, out bool mod)
         {
             mod = false;
             if (user?.RoleIds.Contains(options.ModeratorRoleId) ?? false)
