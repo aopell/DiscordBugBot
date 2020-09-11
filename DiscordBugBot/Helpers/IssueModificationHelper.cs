@@ -53,7 +53,7 @@ namespace DiscordBugBot.Helpers
 
             DataStore.CreateIssue(issue);
 
-            await channel.SendMessageAsync("Approved!", embed: IssueEmbedHelper.GenerateInlineIssueEmbed(issue, options, category));
+            //await channel.SendMessageAsync("Approved!", embed: IssueEmbedHelper.GenerateInlineIssueEmbed(issue, options, category));
         }
 
         public static async Task<(IssueCategory, bool)> UpdateIssue(Issue issue, IssueUpdateArgs args)

@@ -50,7 +50,7 @@ namespace DiscordBugBot.Helpers
             _ = message.RemoveReactionAsync(reaction.Emote, reactionUser);
             var options = DiscordBot.MainInstance.DataStore.GetOptions(gc.GuildId);
             if (options is null) return;
-            IssueConfirmationHelper.GetVoterStatus((IGuildUser)reactionUser, options, out bool mod);
+            (bool voter, bool mod) = IssueConfirmationHelper.GetVoterStatus((IGuildUser)reactionUser, options);
             if (!mod) return;
             var action = IssueLogReactionActions.GetValueOrDefault(reaction.Emote.ToString());
             if (action is null) return;

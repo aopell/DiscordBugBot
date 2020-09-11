@@ -27,7 +27,8 @@ namespace DiscordBugBot.Helpers
             if (options?.AllowedChannels is null || !options.AllowedChannels.Contains(channel.Id)) return;
             var user = reaction.User.Value as IGuildUser;
 
-            if (GetVoterStatus(user, options, out bool mod)) return;
+            (bool voter, bool mod) = GetVoterStatus(user, options);
+            if (!voter) return;
 
             IssueCategory category = GetCategory(reaction, gid);
 
@@ -42,19 +43,21 @@ namespace DiscordBugBot.Helpers
             UpdateProposals(channel, message, mod, proposal, options, props);
         }
 
-        public static bool GetVoterStatus(IGuildUser user, GuildOptions options, out bool mod)
+        public static (bool voter, bool mod) GetVoterStatus(IGuildUser user, GuildOptions options)
         {
-            mod = false;
+            bool mod = false;
+            bool voter = false;
             if (user?.RoleIds.Contains(options.ModeratorRoleId) ?? false)
             {
                 mod = true;
+                voter = true;
             }
-            else if (!(user?.RoleIds.Contains(options.VoterRoleId) ?? false))
+            if (user?.RoleIds.Contains(options.VoterRoleId) ?? false)
             {
-                return true;
+                voter = true;
             }
 
-            return false;
+            return (voter, mod);
         }
 
         private static IssueCategory GetCategory(SocketReaction reaction, ulong gid)
