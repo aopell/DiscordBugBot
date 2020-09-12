@@ -30,7 +30,7 @@ namespace DiscordBugBot.Helpers
 
         public static async Task UpdateLogIssueEmbed(Issue issue, IssueCategory category = null, GuildOptions options = null)
         {
-            options ??= DiscordBot.MainInstance.DataStore.GetOptions(issue.GuildId);
+            options ??= DiscordBot.MainInstance.DataStore.GuildOptions.Find(issue.GuildId);
             if (options?.LoggingChannelId is null) return;
 
             if (!(DiscordBot.MainInstance.Client.GetChannel(options.LoggingChannelId.Value) is IMessageChannel logChannel)) return;
@@ -45,10 +45,10 @@ namespace DiscordBugBot.Helpers
         {
             if (reactionUser is null || reactionUser.IsBot) return;
             if (!(channel is IGuildChannel gc)) return;
-            var issue = DiscordBot.MainInstance.DataStore.GetIssueByLogMessage(gc.GuildId, message.Id);
+            var issue = DiscordBot.MainInstance.DataStore.Issues.SingleOrDefault(i => i.GuildId == gc.GuildId && i.LogMessageId == message.Id);
             if (issue is null) return;
             _ = message.RemoveReactionAsync(reaction.Emote, reactionUser);
-            var options = DiscordBot.MainInstance.DataStore.GetOptions(gc.GuildId);
+            var options = DiscordBot.MainInstance.DataStore.GuildOptions.Find(gc.GuildId);
             if (options is null) return;
             (bool voter, bool mod) = IssueConfirmationHelper.GetVoterStatus((IGuildUser)reactionUser, options);
             if (!mod) return;

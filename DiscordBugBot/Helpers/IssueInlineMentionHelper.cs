@@ -21,9 +21,10 @@ namespace DiscordBugBot.Helpers
 
             if (matches.Count == 0) return;
 
-            foreach (var match in matches.ToList())
+            foreach (Match match in matches)
             {
-                var issue = DiscordBot.MainInstance.DataStore.GetIssueByNumber(gc.GuildId, match.Groups[1].Value);
+                string issueNum = match.Groups[1].Value;
+                var issue = DiscordBot.MainInstance.DataStore.Issues.SingleOrDefault(i => i.GuildId == gc.GuildId && i.Number == issueNum);
                 if (issue is null) continue;
 
                 await message.Channel.SendMessageAsync(embed: IssueEmbedHelper.GenerateInlineIssueEmbed(issue));

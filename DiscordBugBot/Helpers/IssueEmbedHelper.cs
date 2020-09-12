@@ -5,6 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using DiscordBugBot.Models;
 using DiscordBugBot.Tools;
+using System.Linq;
 
 namespace DiscordBugBot.Helpers
 {
@@ -12,7 +13,7 @@ namespace DiscordBugBot.Helpers
     {
         public static Embed GenerateInlineIssueEmbed(Issue issue, GuildOptions options = null, IssueCategory category = null)
         {
-            options ??= DiscordBot.MainInstance.DataStore.GetOptions(issue.GuildId);
+            options ??= DiscordBot.MainInstance.DataStore.GuildOptions.Find(issue.GuildId);
             return GenerateIssueEmbed(issue, category, options, true);
         }
 
@@ -23,7 +24,7 @@ namespace DiscordBugBot.Helpers
 
         private static Embed GenerateIssueEmbed(Issue issue, IssueCategory category, GuildOptions options, bool inline)
         {
-            category ??= DiscordBot.MainInstance.DataStore.GetCategory(issue.GuildId, issue.Category);
+            category ??= issue.Category ?? DiscordBot.MainInstance.DataStore.Categories.Single(c => c.Id == issue.CategoryId);
 
             var embed = new EmbedBuilder()
                         .WithTitle($"{category?.EmojiIcon} `{issue.Number}` {issue.Title}")

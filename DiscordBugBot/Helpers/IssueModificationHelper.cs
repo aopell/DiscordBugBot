@@ -13,15 +13,14 @@ namespace DiscordBugBot.Helpers
 {
     public static class IssueModificationHelper
     {
-        public static IDataStore DataStore => DiscordBot.MainInstance.DataStore;
+        public static BugBotDataContext DataStore => DiscordBot.MainInstance.DataStore;
         public static DiscordSocketClient Client => DiscordBot.MainInstance.Client;
 
         public static async Task CreateIssue(Proposal proposal, ISocketMessageChannel channel, IUserMessage message, GuildOptions options, string title = null, string description = null)
         {
-            var category = DataStore.GetCategory(proposal.GuildId, proposal.Category);
+            var category = proposal.Category ?? await DataStore.Categories.FindAsync(proposal.CategoryId);
             int number = category.NextNumber;
             category.NextNumber++;
-            DataStore.UpdateCategory(category);
             var now = DateTimeOffset.Now;
 
             var issue = new Issue
@@ -51,7 +50,8 @@ namespace DiscordBugBot.Helpers
                 issue.LogMessageId = logmessage.Id;
             }
 
-            DataStore.CreateIssue(issue);
+            DataStore.Add(issue);
+            await DataStore.SaveChangesAsync();
 
             //await channel.SendMessageAsync("Approved!", embed: IssueEmbedHelper.GenerateInlineIssueEmbed(issue, options, category));
         }
@@ -95,23 +95,21 @@ namespace DiscordBugBot.Helpers
 
             if (args.Category != null)
             {
-                category = DataStore.GetCategory(issue.GuildId, args.Category);
+                category = DataStore.Categories.SingleOrDefault(c => c.GuildId == issue.GuildId && c.Name == args.Category);
                 if (category is null) throw new CommandExecutionException("Invalid value for `Category`");
 
                 string newNumber = $"{category.Prefix}-{category.NextNumber}";
 
                 category.NextNumber++;
-                DataStore.UpdateCategory(category);
+                await DataStore.SaveChangesAsync();
 
-                issue.Category = args.Category;
+                issue.CategoryId = category.Id;
                 issue.Number = newNumber;
             }
 
-            category ??= DataStore.GetCategory(issue.GuildId, issue.Category);
+            await DataStore.SaveChangesAsync();
 
-            DataStore.UpdateIssue(issue);
-
-            _ = IssueLogHelper.UpdateLogIssueEmbed(issue, category);
+            _ = IssueLogHelper.UpdateLogIssueEmbed(issue, issue.Category);
 
             return (category, number != issue.Number);
         }

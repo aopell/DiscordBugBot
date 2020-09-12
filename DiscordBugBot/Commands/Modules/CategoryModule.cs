@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading.Tasks;
 using DiscordBugBot.Models;
+using Microsoft.EntityFrameworkCore;
 using System.Linq;
 
 namespace DiscordBugBot.Commands.Modules
@@ -16,7 +17,7 @@ namespace DiscordBugBot.Commands.Modules
         [Summary("Create an issue category")]
         public async Task Create(string name, string prefix, string emoji)
         {
-            if (Context.Bot.DataStore.GetCategory(Context.Guild.Id, name) != null)
+            if (await ((IQueryable<IssueCategory>)Context.Bot.DataStore.Categories).AnyAsync(c => c.GuildId == Context.Guild.Id && c.Name == name))
             {
                 throw new CommandExecutionException($"A category with the name `{name}` already exists in this server");
             }
@@ -31,7 +32,8 @@ namespace DiscordBugBot.Commands.Modules
                 NextNumber = 1
             };
 
-            Context.Bot.DataStore.CreateCategory(category);
+            Context.Bot.DataStore.Add(category);
+            Context.Bot.DataStore.SaveChanges();
 
             await Context.Channel.SendMessageAsync($"Category `{category.Name}` created. The first issue in this category will be {category.EmojiIcon} `{category.Prefix}-{category.NextNumber}`");
         }
@@ -41,7 +43,7 @@ namespace DiscordBugBot.Commands.Modules
         [Summary("List issue categories")]
         public async Task List()
         {
-            var categories = Context.Bot.DataStore.GetCategories(Context.Guild.Id);
+            var categories = ((IQueryable<IssueCategory>)Context.Bot.DataStore.Categories).Where(c => c.GuildId == Context.Guild.Id);
             string message = string.Join(
                 "\n",
                 categories.Select(

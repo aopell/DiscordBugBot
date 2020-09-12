@@ -8,12 +8,13 @@ using Discord.WebSocket;
 using DiscordBugBot.Data;
 using DiscordBugBot.Models;
 using DiscordBugBot.Tools;
+using Microsoft.EntityFrameworkCore;
 
 namespace DiscordBugBot.Helpers
 {
     public static class IssueConfirmationHelper
     {
-        private static IDataStore DataStore => DiscordBot.MainInstance.DataStore;
+        private static BugBotDataContext DataStore => DiscordBot.MainInstance.DataStore;
         private static DiscordSocketClient Client => DiscordBot.MainInstance.Client;
 
         public static async Task HandleMessageReaction(ISocketMessageChannel channel, SocketReaction reaction, IUserMessage message)
@@ -23,8 +24,8 @@ namespace DiscordBugBot.Helpers
             ulong cid = channel.Id;
             ulong mid = message.Id;
 
-            var options = DataStore.GetOptions(gchannel.GuildId);
-            if (options?.AllowedChannels is null || !options.AllowedChannels.Contains(channel.Id)) return;
+            var options = await DataStore.GuildOptions.Include(g => g.AllowedChannels).SingleOrDefaultAsync(x => x.Id == gchannel.GuildId);
+            if (options?.AllowedChannels is null || !options.AllowedChannels.Any(x => x.ChannelId == channel.Id)) return;
             var user = reaction.User.Value as IGuildUser;
 
             (bool voter, bool mod) = GetVoterStatus(user, options);
@@ -34,13 +35,25 @@ namespace DiscordBugBot.Helpers
 
             if (category is null) return;
 
-            var props = DataStore.GetProposals(gid, cid, mid).ToList();
+            if (DataStore.Proposals.Any(p => p.GuildId == gid && p.ChannelId == cid && p.MessageId == mid && p.Status == ProposalStatus.Approved)) return;
 
-            if (props.Any(p => p.Status == ProposalStatus.Approved)) return;
+            var proposal = DataStore.Proposals.FirstOrDefault(p => p.GuildId == gid && p.ChannelId == cid && p.MessageId == mid && p.CategoryId == category.Id);
+            if (proposal is null)
+            {
+                proposal = new Proposal
+                {
+                    GuildId = gid,
+                    ChannelId = cid,
+                    MessageId = mid,
+                    CategoryId = category.Id,
+                    Status = ProposalStatus.Proposed
+                };
+                DataStore.Add(proposal);
+            }
 
-            Proposal proposal = GetProposal(props, category, gid, cid, mid);
+            UpdateProposals(channel, message, mod, proposal, options);
 
-            UpdateProposals(channel, message, mod, proposal, options, props);
+            await DataStore.SaveChangesAsync();
         }
 
         public static (bool voter, bool mod) GetVoterStatus(IGuildUser user, GuildOptions options)
@@ -62,28 +75,8 @@ namespace DiscordBugBot.Helpers
 
         private static IssueCategory GetCategory(SocketReaction reaction, ulong gid)
         {
-            var categories = DataStore.GetCategories(gid);
-            var category = categories.FirstOrDefault(c => c.EmojiIcon == reaction.Emote.ToString());
-            return category;
-        }
-
-        private static Proposal GetProposal(List<Proposal> props, IssueCategory category, ulong gid, ulong cid, ulong mid)
-        {
-            var proposal = props.FirstOrDefault(p => p.Category == category.Name);
-            if (proposal is null)
-            {
-                proposal = new Proposal
-                {
-                    GuildId = gid,
-                    ChannelId = cid,
-                    MessageId = mid,
-                    Category = category.Name,
-                    Status = ProposalStatus.Proposed
-                };
-                DataStore.CreateProposal(proposal);
-            }
-
-            return proposal;
+            string emoteStr = reaction.Emote.ToString();
+            return DataStore.Categories.SingleOrDefault(c => c.GuildId == gid && c.EmojiIcon == emoteStr);
         }
 
         private static void UpdateProposals(
@@ -91,8 +84,7 @@ namespace DiscordBugBot.Helpers
             IUserMessage message,
             bool mod,
             Proposal proposal,
-            GuildOptions options,
-            List<Proposal> props
+            GuildOptions options
         )
         {
             if (mod)
@@ -109,7 +101,7 @@ namespace DiscordBugBot.Helpers
                 }
             }
 
-            DataStore.UpdateProposals(props);
+            DataStore.SaveChanges();
         }
     }
 }

@@ -18,7 +18,7 @@ namespace DiscordBugBot
         public DiscordSocketClient Client { get; private set; }
         public Secret Secret { get; private set; }
         public Options Options { get; private set; }
-        public IDataStore DataStore { get; } = new LiteDbDataStore("issues.db");
+        public BugBotDataContext DataStore { get; } = new BugBotDataContext();
 
         public static async Task Main()
         {

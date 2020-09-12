@@ -7,11 +7,17 @@ namespace DiscordBugBot.Models
     public class IssueCategory
     {
         public Guid Id { get; set; }
-        public ulong GuildId { get; set; }
         public string Name { get; set; }
         public string Prefix { get; set; }
+        [Obsolete("Race conditions. Issue numbering scheme will be rennovated.")]
         public int NextNumber { get; set; }
         public string EmojiIcon { get; set; }
         public bool Archived { get; set; }
+
+        public ulong GuildId { get; set; }
+        public GuildOptions Guild { get; set; }
+
+        public List<Issue> Issues { get; set; } = new List<Issue>();
+        public List<Proposal> Proposals { get; set; } = new List<Proposal>();
     }
 }
