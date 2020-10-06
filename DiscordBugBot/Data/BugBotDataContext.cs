@@ -13,8 +13,18 @@ namespace DiscordBugBot.Data
         public DbSet<Proposal> Proposals { get; set; }
         public DbSet<GuildApprovedIssueChannel> IssueChannels { get; set; }
 
+        public BugBotDataContext()
+        {
+            Database.Migrate();
+        }
+
         protected override void OnConfiguring(DbContextOptionsBuilder options)
-            => options.UseSqlite(SqliteConnectionString);
+        {
+            options.UseSqlite(SqliteConnectionString);
+#if DEBUG
+            options.EnableSensitiveDataLogging();
+#endif
+        }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

@@ -59,7 +59,7 @@ namespace DiscordBugBot.Helpers
                                 IsInline = true
                             }
                         )
-                        .WithFooter($"Category: {issue.Category} • Last Updated");
+                        .WithFooter($"Category: {issue.Category.Name} • Last Updated");
 
             if (issue.Assignee.HasValue)
             {

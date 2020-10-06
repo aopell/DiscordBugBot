@@ -1,6 +1,7 @@
 ﻿using Discord;
 using Discord.Commands;
 using DiscordBugBot.Models;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -30,18 +31,31 @@ namespace DiscordBugBot.Commands.Modules
         [Summary("Sets up the server with the given options")]
         public async Task Setup(IMessageChannel issueLogChannel, IMessageChannel dashboardChannel, IRole modRole, IRole voterRole, int minVotes = 3, string githubRepository = null)
         {
-            var options = new GuildOptions();
+            using (var tx = await Context.Bot.DataStore.Database.BeginTransactionAsync())
+            {
+                GuildOptions existingOpts = Context.Bot.DataStore.GuildOptions.Find(Context.Guild.Id);
+                var options = existingOpts ?? new GuildOptions();
 
-            options.Id = Context.Guild.Id;
-            options.LoggingChannelId = issueLogChannel.Id;
-            options.TrackerChannelId = dashboardChannel.Id;
-            options.ModeratorRoleId = modRole.Id;
-            options.VoterRoleId = voterRole.Id;
-            options.MinApprovalVotes = minVotes;
-            options.GithubRepository = githubRepository;
+                options.Id = Context.Guild.Id;
+                options.LoggingChannelId = issueLogChannel.Id;
+                options.TrackerChannelId = dashboardChannel.Id;
+                options.ModeratorRoleId = modRole.Id;
+                options.VoterRoleId = voterRole.Id;
+                options.MinApprovalVotes = minVotes;
+                options.GithubRepository = githubRepository;
 
-            Context.Bot.DataStore.GuildOptions.Add(options);
-            await Context.Bot.DataStore.SaveChangesAsync();
+                if (existingOpts != null)
+                {
+                    Context.Bot.DataStore.GuildOptions.Update(options);
+                }
+                else
+                {
+                    Context.Bot.DataStore.GuildOptions.Add(options);
+                }
+                await Context.Bot.DataStore.SaveChangesAsync();
+
+                await tx.CommitAsync();
+            }
             await Context.Channel.SendMessageAsync("Settings created or updated successfully");
         }
 
@@ -65,7 +79,9 @@ namespace DiscordBugBot.Commands.Modules
             public async Task Remove(IMessageChannel channel = null)
             {
                 channel ??= Context.Channel;
-                Context.Bot.DataStore.IssueChannels.Remove(new GuildApprovedIssueChannel() { GuildId = Context.Guild.Id, ChannelId = channel.Id });
+                // https://entityframeworkcore.com/knowledge-base/47813464/delete-loaded-and-unloaded-objects-by-id-in-entityframeworkcore
+                var instance = await Context.Bot.DataStore.IssueChannels.SingleAsync(x => x.GuildId == Context.Guild.Id && x.ChannelId == channel.Id);
+                Context.Bot.DataStore.Remove<GuildApprovedIssueChannel>(instance);
                 await Context.Bot.DataStore.SaveChangesAsync();
                 //if (!options.AllowedChannels.Remove(channel.Id)) throw new CommandExecutionException("That channel is not a proposal channel");
                 await Context.Channel.SendMessageAsync("Channel removed successfully");

@@ -79,6 +79,7 @@ namespace DiscordBugBot.Helpers
             return DataStore.Categories.SingleOrDefault(c => c.GuildId == gid && c.EmojiIcon == emoteStr);
         }
 
+
         private static void UpdateProposals(
             ISocketMessageChannel channel,
             IUserMessage message,
@@ -87,6 +88,7 @@ namespace DiscordBugBot.Helpers
             GuildOptions options
         )
         {
+#warning Exceptions are swallowed here
             if (mod)
             {
                 proposal.Status = ProposalStatus.Approved;

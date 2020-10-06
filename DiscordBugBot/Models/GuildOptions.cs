@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -10,6 +12,7 @@ namespace DiscordBugBot.Models
         /// <summary>
         /// Use Guild IDs for this field.
         /// </summary>
+        [Key, DatabaseGenerated(DatabaseGeneratedOption.None)]
         public ulong Id { get; set; }
 
         public ulong ModeratorRoleId { get; set; }
