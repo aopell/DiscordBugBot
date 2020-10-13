@@ -57,7 +57,7 @@ namespace DiscordBugBot.Helpers
             {
                 var logchannel = (ISocketMessageChannel)mainInstance.Client.GetChannel(options.LoggingChannelId.Value);
                 var logmessage = await logchannel.SendMessageAsync(embed: GenerateLogIssueEmbed(issue, category));
-                _ = logmessage.AddReactionsAsync(IssueLogHelper.IssueLogReactions);
+                await logmessage.AddReactionsAsync(IssueLogHelper.IssueLogReactions);
                 issue.LogMessageId = logmessage.Id;
             }
 
@@ -119,9 +119,7 @@ namespace DiscordBugBot.Helpers
             }
 
             await dataStore.SaveChangesAsync();
-
-#warning Unawaited task
-            _ = UpdateLogIssueEmbed(issue, issue.Category);
+            await UpdateLogIssueEmbed(issue, issue.Category);
 
             return (category, number != issue.Number);
         }
@@ -236,7 +234,7 @@ namespace DiscordBugBot.Helpers
             if (!(channel is IGuildChannel gc)) return;
             var issue = await dataStore.Issues.SingleOrDefaultAsync(i => i.GuildId == gc.GuildId && i.LogMessageId == message.Id);
             if (issue is null) return;
-            _ = message.RemoveReactionAsync(reaction.Emote, reactionUser);
+            await message.RemoveReactionAsync(reaction.Emote, reactionUser);
             var options = dataStore.GuildOptions.Find(gc.GuildId);
             if (options is null) return;
             (_, bool mod) = IssueConfirmationHelper.GetVoterStatus((IGuildUser)reactionUser, options);

@@ -57,7 +57,7 @@ namespace DiscordBugBot.Helpers
                 dataStore.Add(proposal);
             }
 
-            UpdateProposals(channel, message, mod, proposal, options);
+            await UpdateProposals(channel, message, mod, proposal, options);
 
             await dataStore.SaveChangesAsync();
         }
@@ -86,7 +86,7 @@ namespace DiscordBugBot.Helpers
         }
 
 
-        private void UpdateProposals(
+        private async Task UpdateProposals(
             ISocketMessageChannel channel,
             IUserMessage message,
             bool mod,
@@ -94,18 +94,17 @@ namespace DiscordBugBot.Helpers
             GuildOptions options
         )
         {
-#warning Exceptions are swallowed here
             if (mod)
             {
                 proposal.Status = ProposalStatus.Approved;
-                _ = helper.CreateIssue(proposal, channel, message, options);
+                await helper.CreateIssue(proposal, channel, message, options);
             }
             else
             {
                 proposal.ApprovalVotes++;
                 if (proposal.ApprovalVotes >= options.MinApprovalVotes)
                 {
-                    _ = helper.CreateIssue(proposal, channel, message, options);
+                    await helper.CreateIssue(proposal, channel, message, options);
                 }
             }
 

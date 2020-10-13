@@ -74,12 +74,11 @@ namespace DiscordBugBot
                 .BuildServiceProvider(validateScopes: true);
         }
 
-        private Task Client_MessageReceived(SocketMessage message)
+        private async Task Client_MessageReceived(SocketMessage message)
         {
             using var scope = MainProvider.CreateScope();
-#warning Unawaited task
-            _ = scope.ServiceProvider.GetRequiredService<IssueHelper>().ProcessMessageTextForInlineMention(message);
-            return Task.CompletedTask;
+#warning Blocks event loop
+            await scope.ServiceProvider.GetRequiredService<IssueHelper>().ProcessMessageTextForInlineMention(message);
         }
 
         private Task Client_Ready()
@@ -98,10 +97,10 @@ namespace DiscordBugBot
             using var scope = MainProvider.CreateScope();
 
             var message = await cachedMessage.GetOrDownloadAsync();
-#warning Unawaited task
-            _ = ReactionMessageHelper.HandleReactionMessage(channel, Client.CurrentUser, reaction, message);
-            _ = scope.ServiceProvider.GetRequiredService<IssueConfirmationHelper>().HandleMessageReaction(channel, reaction, message);
-            _ = scope.ServiceProvider.GetRequiredService<IssueHelper>().HandleLogMessageReaction(channel, reaction, reaction.User.IsSpecified ? reaction.User.Value : null, message);
+#warning Blocks event loop
+            await ReactionMessageHelper.HandleReactionMessage(channel, Client.CurrentUser, reaction, message);
+            await scope.ServiceProvider.GetRequiredService<IssueConfirmationHelper>().HandleMessageReaction(channel, reaction, message);
+            await scope.ServiceProvider.GetRequiredService<IssueHelper>().HandleLogMessageReaction(channel, reaction, reaction.User.IsSpecified ? reaction.User.Value : null, message);
         }
 
         private static void CurrentDomain_ProcessExit(object sender, EventArgs e)
