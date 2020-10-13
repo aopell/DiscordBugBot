@@ -1,5 +1,6 @@
 ﻿using Discord;
 using Discord.Commands;
+using DiscordBugBot.Data;
 using DiscordBugBot.Models;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -10,8 +11,10 @@ using System.Threading.Tasks;
 namespace DiscordBugBot.Commands.Modules
 {
     [Group("setup")]
-    public class SetupModule : ModuleBase<BotCommandContext>
+    public class SetupModule : ModuleBase<SocketCommandContext>
     {
+        public BugBotDataContext DataStore { get; set; }
+
         [RequireUserPermission(GuildPermission.ManageGuild)]
         [Command]
         [Summary("Provides information on how to set up the server")]
@@ -31,9 +34,9 @@ namespace DiscordBugBot.Commands.Modules
         [Summary("Sets up the server with the given options")]
         public async Task Setup(IMessageChannel issueLogChannel, IMessageChannel dashboardChannel, IRole modRole, IRole voterRole, int minVotes = 3, string githubRepository = null)
         {
-            using (var tx = await Context.Bot.DataStore.Database.BeginTransactionAsync())
+            using (var tx = await DataStore.Database.BeginTransactionAsync())
             {
-                GuildOptions existingOpts = Context.Bot.DataStore.GuildOptions.Find(Context.Guild.Id);
+                GuildOptions existingOpts = DataStore.GuildOptions.Find(Context.Guild.Id);
                 var options = existingOpts ?? new GuildOptions();
 
                 options.Id = Context.Guild.Id;
@@ -46,13 +49,13 @@ namespace DiscordBugBot.Commands.Modules
 
                 if (existingOpts != null)
                 {
-                    Context.Bot.DataStore.GuildOptions.Update(options);
+                    DataStore.GuildOptions.Update(options);
                 }
                 else
                 {
-                    Context.Bot.DataStore.GuildOptions.Add(options);
+                    DataStore.GuildOptions.Add(options);
                 }
-                await Context.Bot.DataStore.SaveChangesAsync();
+                await DataStore.SaveChangesAsync();
 
                 await tx.CommitAsync();
             }
@@ -60,16 +63,18 @@ namespace DiscordBugBot.Commands.Modules
         }
 
         [Group("channel")]
-        public class ChannelSetupModule : ModuleBase<BotCommandContext>
+        public class ChannelSetupModule : ModuleBase<SocketCommandContext>
         {
+            public BugBotDataContext DataStore { get; set; }
+
             [ModeratorRequired]
             [Command]
             [Summary("Sets up the current channel as a valid proposal channel")]
             public async Task Channel(IMessageChannel channel = null)
             {
                 channel ??= Context.Channel;
-                Context.Bot.DataStore.IssueChannels.Add(new GuildApprovedIssueChannel() { GuildId = Context.Guild.Id, ChannelId = channel.Id });
-                await Context.Bot.DataStore.SaveChangesAsync();
+                DataStore.IssueChannels.Add(new GuildApprovedIssueChannel() { GuildId = Context.Guild.Id, ChannelId = channel.Id });
+                await DataStore.SaveChangesAsync();
                 await Context.Channel.SendMessageAsync("Channel set up successfully");
             }
 
@@ -80,9 +85,9 @@ namespace DiscordBugBot.Commands.Modules
             {
                 channel ??= Context.Channel;
                 // https://entityframeworkcore.com/knowledge-base/47813464/delete-loaded-and-unloaded-objects-by-id-in-entityframeworkcore
-                var instance = await Context.Bot.DataStore.IssueChannels.SingleAsync(x => x.GuildId == Context.Guild.Id && x.ChannelId == channel.Id);
-                Context.Bot.DataStore.Remove<GuildApprovedIssueChannel>(instance);
-                await Context.Bot.DataStore.SaveChangesAsync();
+                var instance = await DataStore.IssueChannels.SingleAsync(x => x.GuildId == Context.Guild.Id && x.ChannelId == channel.Id);
+                DataStore.Remove<GuildApprovedIssueChannel>(instance);
+                await DataStore.SaveChangesAsync();
                 //if (!options.AllowedChannels.Remove(channel.Id)) throw new CommandExecutionException("That channel is not a proposal channel");
                 await Context.Channel.SendMessageAsync("Channel removed successfully");
             }

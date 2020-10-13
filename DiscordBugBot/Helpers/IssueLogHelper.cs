@@ -5,18 +5,19 @@ using System.Text;
 using System.Threading.Tasks;
 using Discord;
 using Discord.WebSocket;
+using DiscordBugBot.Data;
 using DiscordBugBot.Models;
 using DiscordBugBot.Tools;
 
 namespace DiscordBugBot.Helpers
 {
-    public delegate Task IssueLogAction(Issue issue, IUser user);
+    public delegate Task IssueLogAction(IssueHelper helper, Issue issue, IUser user);
 
-    public static class IssueLogHelper
+    internal static class IssueLogHelper
     {
         public static IEmote[] IssueLogReactions => IssueLogReactionActions.Keys.Select(s => Emote.TryParse(s, out Emote e) ? (IEmote)e : new Emoji(s)).ToArray();
 
-        private static readonly Dictionary<string, IssueLogAction> IssueLogReactionActions = new Dictionary<string, IssueLogAction>
+        public static readonly IReadOnlyDictionary<string, IssueLogAction> IssueLogReactionActions = new Dictionary<string, IssueLogAction>
         {
             [Strings.OrangeUpArrowEmoji] = IncreasePriority,
             [Strings.BlueDownArrowEmoji] = DecreasePriority,
@@ -28,44 +29,15 @@ namespace DiscordBugBot.Helpers
             [Strings.GithubEmoji] = EscalateToGithub
         };
 
-        public static async Task UpdateLogIssueEmbed(Issue issue, IssueCategory category = null, GuildOptions options = null)
-        {
-            options ??= DiscordBot.MainInstance.DataStore.GuildOptions.Find(issue.GuildId);
-            if (options?.LoggingChannelId is null) return;
-
-            if (!(DiscordBot.MainInstance.Client.GetChannel(options.LoggingChannelId.Value) is IMessageChannel logChannel)) return;
-
-            if (!(await logChannel.GetMessageAsync(issue.LogMessageId) is IUserMessage logMessage)) return;
-
-            Embed embed = IssueEmbedHelper.GenerateLogIssueEmbed(issue, category);
-            await logMessage.ModifyAsync(mp => mp.Embed = embed);
-        }
-
-        public static async Task HandleLogMessageReaction(IMessageChannel channel, IReaction reaction, IUser reactionUser, IUserMessage message)
-        {
-            if (reactionUser is null || reactionUser.IsBot) return;
-            if (!(channel is IGuildChannel gc)) return;
-            var issue = DiscordBot.MainInstance.DataStore.Issues.SingleOrDefault(i => i.GuildId == gc.GuildId && i.LogMessageId == message.Id);
-            if (issue is null) return;
-            _ = message.RemoveReactionAsync(reaction.Emote, reactionUser);
-            var options = DiscordBot.MainInstance.DataStore.GuildOptions.Find(gc.GuildId);
-            if (options is null) return;
-            (bool voter, bool mod) = IssueConfirmationHelper.GetVoterStatus((IGuildUser)reactionUser, options);
-            if (!mod) return;
-            var action = IssueLogReactionActions.GetValueOrDefault(reaction.Emote.ToString());
-            if (action is null) return;
-            await action(issue, reactionUser);
-        }
-
-        private static async Task EscalateToGithub(Issue issue, IUser user)
+        private static async Task EscalateToGithub(IssueHelper helper, Issue issue, IUser user)
         {
             await user.SendMessageAsync("That feature isn't implemented yet");
         }
 
-        private static async Task UnclaimIssue(Issue issue, IUser user)
+        private static async Task UnclaimIssue(IssueHelper helper, Issue issue, IUser user)
         {
             if (issue.Assignee != user.Id) return;
-            await IssueModificationHelper.UpdateIssue(
+            await helper.UpdateIssue(
                 issue,
                 new IssueUpdateArgs
                 {
@@ -74,9 +46,9 @@ namespace DiscordBugBot.Helpers
             );
         }
 
-        private static async Task ClaimIssue(Issue issue, IUser user)
+        private static async Task ClaimIssue(IssueHelper helper, Issue issue, IUser user)
         {
-            await IssueModificationHelper.UpdateIssue(
+            await helper.UpdateIssue(
                 issue,
                 new IssueUpdateArgs
                 {
@@ -86,9 +58,9 @@ namespace DiscordBugBot.Helpers
         }
 
 
-        private static async Task MarkDone(Issue issue, IUser user)
+        private static async Task MarkDone(IssueHelper helper, Issue issue, IUser user)
         {
-            await IssueModificationHelper.UpdateIssue(
+            await helper.UpdateIssue(
                 issue,
                 new IssueUpdateArgs
                 {
@@ -97,9 +69,9 @@ namespace DiscordBugBot.Helpers
             );
         }
 
-        private static async Task MarkInProgress(Issue issue, IUser user)
+        private static async Task MarkInProgress(IssueHelper helper, Issue issue, IUser user)
         {
-            await IssueModificationHelper.UpdateIssue(
+            await helper.UpdateIssue(
                 issue,
                 new IssueUpdateArgs
                 {
@@ -108,9 +80,9 @@ namespace DiscordBugBot.Helpers
             );
         }
 
-        private static async Task MarkToDo(Issue issue, IUser user)
+        private static async Task MarkToDo(IssueHelper helper, Issue issue, IUser user)
         {
-            await IssueModificationHelper.UpdateIssue(
+            await helper.UpdateIssue(
                 issue,
                 new IssueUpdateArgs
                 {
@@ -119,10 +91,10 @@ namespace DiscordBugBot.Helpers
             );
         }
 
-        private static async Task DecreasePriority(Issue issue, IUser user)
+        private static async Task DecreasePriority(IssueHelper helper, Issue issue, IUser user)
         {
             if (issue.Priority == IssuePriority.Low) return;
-            await IssueModificationHelper.UpdateIssue(
+            await helper.UpdateIssue(
                 issue,
                 new IssueUpdateArgs
                 {
@@ -131,10 +103,10 @@ namespace DiscordBugBot.Helpers
             );
         }
 
-        private static async Task IncreasePriority(Issue issue, IUser user)
+        private static async Task IncreasePriority(IssueHelper helper, Issue issue, IUser user)
         {
             if (issue.Priority == IssuePriority.VeryHigh) return;
-            await IssueModificationHelper.UpdateIssue(
+            await helper.UpdateIssue(
                 issue,
                 new IssueUpdateArgs
                 {

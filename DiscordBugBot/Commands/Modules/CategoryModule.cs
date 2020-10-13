@@ -6,18 +6,21 @@ using System.Threading.Tasks;
 using DiscordBugBot.Models;
 using Microsoft.EntityFrameworkCore;
 using System.Linq;
+using DiscordBugBot.Data;
 
 namespace DiscordBugBot.Commands.Modules
 {
     [Group("category")]
-    public class CategoryModule : ModuleBase<BotCommandContext>
+    public class CategoryModule : ModuleBase<SocketCommandContext>
     {
+        public BugBotDataContext DataStore { get; set; }
+
         [ModeratorRequired]
         [Command("create")]
         [Summary("Create an issue category")]
         public async Task Create(string name, string prefix, string emoji)
         {
-            if (await ((IQueryable<IssueCategory>)Context.Bot.DataStore.Categories).AnyAsync(c => c.GuildId == Context.Guild.Id && c.Name == name))
+            if (await ((IQueryable<IssueCategory>)DataStore.Categories).AnyAsync(c => c.GuildId == Context.Guild.Id && c.Name == name))
             {
                 throw new CommandExecutionException($"A category with the name `{name}` already exists in this server");
             }
@@ -32,8 +35,8 @@ namespace DiscordBugBot.Commands.Modules
                 NextNumber = 1
             };
 
-            Context.Bot.DataStore.Add(category);
-            Context.Bot.DataStore.SaveChanges();
+            DataStore.Add(category);
+            DataStore.SaveChanges();
 
             await Context.Channel.SendMessageAsync($"Category `{category.Name}` created. The first issue in this category will be {category.EmojiIcon} `{category.Prefix}-{category.NextNumber}`");
         }
@@ -43,7 +46,7 @@ namespace DiscordBugBot.Commands.Modules
         [Summary("List issue categories")]
         public async Task List()
         {
-            var categories = ((IQueryable<IssueCategory>)Context.Bot.DataStore.Categories).Where(c => c.GuildId == Context.Guild.Id);
+            var categories = ((IQueryable<IssueCategory>)DataStore.Categories).Where(c => c.GuildId == Context.Guild.Id);
             string message = string.Join(
                 "\n",
                 categories.Select(

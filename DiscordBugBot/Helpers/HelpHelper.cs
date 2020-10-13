@@ -17,7 +17,7 @@ namespace DiscordBugBot.Helpers
         {
             var commands = new List<HelpInfo>();
 
-            var modules = Assembly.GetExecutingAssembly().GetTypes().Where(t => !t.IsNested && t.IsSubclassOf(typeof(ModuleBase<BotCommandContext>)));
+            var modules = Assembly.GetExecutingAssembly().GetTypes().Where(t => !t.IsNested && t.IsSubclassOf(typeof(ModuleBase<SocketCommandContext>)));
             foreach (Type module in modules) commands.AddRange(GetAllCommands(module));
 
             return commands;

@@ -12,19 +12,25 @@ using Microsoft.EntityFrameworkCore;
 
 namespace DiscordBugBot.Helpers
 {
-    public static class IssueConfirmationHelper
+    public class IssueConfirmationHelper
     {
-        private static BugBotDataContext DataStore => DiscordBot.MainInstance.DataStore;
-        private static DiscordSocketClient Client => DiscordBot.MainInstance.Client;
+        private IssueHelper helper;
+        private BugBotDataContext dataStore;
 
-        public static async Task HandleMessageReaction(ISocketMessageChannel channel, SocketReaction reaction, IUserMessage message)
+        public IssueConfirmationHelper(BugBotDataContext dataStore, IssueHelper helper)
+        {
+            this.dataStore = dataStore;
+            this.helper = helper;
+        }
+
+        public async Task HandleMessageReaction(ISocketMessageChannel channel, SocketReaction reaction, IUserMessage message)
         {
             if ((reaction.User.GetValueOrDefault()?.IsBot ?? false) || !(channel is IGuildChannel gchannel)) return;
             ulong gid = gchannel.GuildId;
             ulong cid = channel.Id;
             ulong mid = message.Id;
 
-            var options = await DataStore.GuildOptions.Include(g => g.AllowedChannels).SingleOrDefaultAsync(x => x.Id == gchannel.GuildId);
+            var options = await dataStore.GuildOptions.Include(g => g.AllowedChannels).SingleOrDefaultAsync(x => x.Id == gchannel.GuildId);
             if (options?.AllowedChannels is null || !options.AllowedChannels.Any(x => x.ChannelId == channel.Id)) return;
             var user = reaction.User.Value as IGuildUser;
 
@@ -35,9 +41,9 @@ namespace DiscordBugBot.Helpers
 
             if (category is null) return;
 
-            if (DataStore.Proposals.Any(p => p.GuildId == gid && p.ChannelId == cid && p.MessageId == mid && p.Status == ProposalStatus.Approved)) return;
+            if (await ((IQueryable<Proposal>)dataStore.Proposals).AnyAsync(p => p.GuildId == gid && p.ChannelId == cid && p.MessageId == mid && p.Status == ProposalStatus.Approved)) return;
 
-            var proposal = DataStore.Proposals.FirstOrDefault(p => p.GuildId == gid && p.ChannelId == cid && p.MessageId == mid && p.CategoryId == category.Id);
+            var proposal = dataStore.Proposals.FirstOrDefault(p => p.GuildId == gid && p.ChannelId == cid && p.MessageId == mid && p.CategoryId == category.Id);
             if (proposal is null)
             {
                 proposal = new Proposal
@@ -48,12 +54,12 @@ namespace DiscordBugBot.Helpers
                     CategoryId = category.Id,
                     Status = ProposalStatus.Proposed
                 };
-                DataStore.Add(proposal);
+                dataStore.Add(proposal);
             }
 
             UpdateProposals(channel, message, mod, proposal, options);
 
-            await DataStore.SaveChangesAsync();
+            await dataStore.SaveChangesAsync();
         }
 
         public static (bool voter, bool mod) GetVoterStatus(IGuildUser user, GuildOptions options)
@@ -73,14 +79,14 @@ namespace DiscordBugBot.Helpers
             return (voter, mod);
         }
 
-        private static IssueCategory GetCategory(SocketReaction reaction, ulong gid)
+        private IssueCategory GetCategory(SocketReaction reaction, ulong gid)
         {
             string emoteStr = reaction.Emote.ToString();
-            return DataStore.Categories.SingleOrDefault(c => c.GuildId == gid && c.EmojiIcon == emoteStr);
+            return dataStore.Categories.SingleOrDefault(c => c.GuildId == gid && c.EmojiIcon == emoteStr);
         }
 
 
-        private static void UpdateProposals(
+        private void UpdateProposals(
             ISocketMessageChannel channel,
             IUserMessage message,
             bool mod,
@@ -92,18 +98,18 @@ namespace DiscordBugBot.Helpers
             if (mod)
             {
                 proposal.Status = ProposalStatus.Approved;
-                _ = IssueModificationHelper.CreateIssue(proposal, channel, message, options);
+                _ = helper.CreateIssue(proposal, channel, message, options);
             }
             else
             {
                 proposal.ApprovalVotes++;
                 if (proposal.ApprovalVotes >= options.MinApprovalVotes)
                 {
-                    _ = IssueModificationHelper.CreateIssue(proposal, channel, message, options);
+                    _ = helper.CreateIssue(proposal, channel, message, options);
                 }
             }
 
-            DataStore.SaveChanges();
+            dataStore.SaveChanges();
         }
     }
 }
