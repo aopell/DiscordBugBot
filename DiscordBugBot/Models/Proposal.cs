@@ -6,13 +6,15 @@ namespace DiscordBugBot.Models
 {
     public class Proposal
     {
-        public Guid Id { get; set; }
         public ulong GuildId { get; set; }
         public ulong ChannelId { get; set; }
         public ulong MessageId { get; set; }
-        public string Category { get; set; }
         public ProposalStatus Status { get; set; }
+        [Obsolete("Race conditions. Vote count scheme will be rennovated.")]
         public int ApprovalVotes { get; set; }
+
+        public Guid CategoryId { get; set; }
+        public IssueCategory Category { get; set; }
     }
 
     public enum ProposalStatus

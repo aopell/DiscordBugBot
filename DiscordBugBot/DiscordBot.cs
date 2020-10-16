@@ -5,6 +5,8 @@ using DiscordBugBot.Commands;
 using DiscordBugBot.Config;
 using DiscordBugBot.Data;
 using DiscordBugBot.Helpers;
+using DiscordBugBot.Tools;
+using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -14,11 +16,12 @@ namespace DiscordBugBot
 {
     public class DiscordBot
     {
-        public static DiscordBot MainInstance = null;
+        private static DiscordBot MainInstance = null;
         public DiscordSocketClient Client { get; private set; }
         public Secret Secret { get; private set; }
         public Options Options { get; private set; }
-        public IDataStore DataStore { get; } = new LiteDbDataStore("issues.db");
+
+        public IServiceProvider MainProvider { get; set; }
 
         public static async Task Main()
         {
@@ -26,14 +29,17 @@ namespace DiscordBugBot
             AppDomain.CurrentDomain.ProcessExit += CurrentDomain_ProcessExit;
 
             MainInstance = new DiscordBot();
+            MainInstance.SetupServices();
 
             ConfigFileManager.LoadConfigFiles(MainInstance);
             MainInstance.Client = new DiscordSocketClient();
 
+            var eventWrapper = new AsyncEventExecutor();
+            eventWrapper.TaskFaulted += MainInstance.EventWrapper_TaskFaulted;
             MainInstance.Client.Log += MainInstance.Log;
             MainInstance.Client.Ready += MainInstance.Client_Ready;
-            MainInstance.Client.ReactionAdded += MainInstance.Client_ReactionAdded;
-            MainInstance.Client.MessageReceived += MainInstance.Client_MessageReceived;
+            MainInstance.Client.ReactionAdded += eventWrapper.CreateEventHandler<Cacheable<IUserMessage, ulong>, ISocketMessageChannel, SocketReaction>(MainInstance.Client_ReactionAdded);
+            MainInstance.Client.MessageReceived += eventWrapper.CreateEventHandler<SocketMessage>(MainInstance.Client_MessageReceived);
 
             if (MainInstance.Secret?.Token is null)
             {
@@ -45,13 +51,6 @@ namespace DiscordBugBot
 
             var ch = new CommandHandler(
                 MainInstance.Client,
-                new CommandService(
-                    new CommandServiceConfig()
-                    {
-                        CaseSensitiveCommands = false,
-                        LogLevel = LogSeverity.Info
-                    }
-                ),
                 MainInstance
             );
 
@@ -60,10 +59,43 @@ namespace DiscordBugBot
             await Task.Delay(-1);
         }
 
-        private Task Client_MessageReceived(SocketMessage message)
+        private void EventWrapper_TaskFaulted(object sender, Task e)
         {
-            _ = IssueInlineMentionHelper.ProcessMessageText(message);
-            return Task.CompletedTask;
+            Console.WriteLine("Error during execution of background event handler.");
+            Console.WriteLine($"Task: {e}, Status: {e.Status}");
+            if (e.Status == TaskStatus.Faulted)
+            {
+                Console.WriteLine("=== Exceptions ===");
+                foreach (var error in e.Exception.InnerExceptions)
+                {
+                    Console.WriteLine(error);
+                }
+                Console.WriteLine("=== ========== ===");
+            }
+        }
+
+        private IServiceProvider SetupServices()
+        {
+            return MainProvider = new ServiceCollection()
+                .AddDbContext<BugBotDataContext>()
+                .AddSingleton<CommandService>(_ =>
+                new CommandService(
+                    new CommandServiceConfig()
+                    {
+                        CaseSensitiveCommands = false,
+                        LogLevel = LogSeverity.Info
+                    }
+                ))
+                .AddSingleton<DiscordBot>(this)
+                .AddTransient<IssueHelper>()
+                .AddTransient<IssueConfirmationHelper>()
+                .BuildServiceProvider(validateScopes: true);
+        }
+
+        private async Task Client_MessageReceived(SocketMessage message)
+        {
+            using var scope = MainProvider.CreateScope();
+            await scope.ServiceProvider.GetRequiredService<IssueHelper>().ProcessMessageTextForInlineMention(message);
         }
 
         private Task Client_Ready()
@@ -79,10 +111,12 @@ namespace DiscordBugBot
 
         private async Task Client_ReactionAdded(Cacheable<IUserMessage, ulong> cachedMessage, ISocketMessageChannel channel, SocketReaction reaction)
         {
+            using var scope = MainProvider.CreateScope();
+
             var message = await cachedMessage.GetOrDownloadAsync();
-            _ = ReactionMessageHelper.HandleReactionMessage(channel, Client.CurrentUser, reaction, message);
-            _ = IssueConfirmationHelper.HandleMessageReaction(channel, reaction, message);
-            _ = IssueLogHelper.HandleLogMessageReaction(channel, reaction, reaction.User.IsSpecified ? reaction.User.Value : null, message);
+            await ReactionMessageHelper.HandleReactionMessage(channel, Client.CurrentUser, reaction, message);
+            await scope.ServiceProvider.GetRequiredService<IssueConfirmationHelper>().HandleMessageReaction(channel, reaction, message);
+            await scope.ServiceProvider.GetRequiredService<IssueHelper>().HandleLogMessageReaction(channel, reaction, reaction.User.IsSpecified ? reaction.User.Value : null, message);
         }
 
         private static void CurrentDomain_ProcessExit(object sender, EventArgs e)

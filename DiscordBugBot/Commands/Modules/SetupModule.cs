@@ -1,6 +1,8 @@
 ﻿using Discord;
 using Discord.Commands;
+using DiscordBugBot.Data;
 using DiscordBugBot.Models;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -9,8 +11,10 @@ using System.Threading.Tasks;
 namespace DiscordBugBot.Commands.Modules
 {
     [Group("setup")]
-    public class SetupModule : ModuleBase<BotCommandContext>
+    public class SetupModule : ModuleBase<SocketCommandContext>
     {
+        public BugBotDataContext DataStore { get; set; }
+
         [RequireUserPermission(GuildPermission.ManageGuild)]
         [Command]
         [Summary("Provides information on how to set up the server")]
@@ -30,49 +34,47 @@ namespace DiscordBugBot.Commands.Modules
         [Summary("Sets up the server with the given options")]
         public async Task Setup(IMessageChannel issueLogChannel, IMessageChannel dashboardChannel, IRole modRole, IRole voterRole, int minVotes = 3, string githubRepository = null)
         {
-            bool exists = true;
-            var options = Context.Bot.DataStore.GetOptions(Context.Guild.Id);
-            if (options is null)
+            using (var tx = await DataStore.Database.BeginTransactionAsync())
             {
-                exists = false;
-                options = new GuildOptions();
-            }
+                GuildOptions existingOpts = DataStore.GuildOptions.Find(Context.Guild.Id);
+                var options = existingOpts ?? new GuildOptions();
 
-            options.GuildId = Context.Guild.Id;
-            options.LoggingChannelId = issueLogChannel.Id;
-            options.TrackerChannelId = dashboardChannel.Id;
-            options.ModeratorRoleId = modRole.Id;
-            options.VoterRoleId = voterRole.Id;
-            options.MinApprovalVotes = minVotes;
-            options.GithubRepository = githubRepository;
+                options.Id = Context.Guild.Id;
+                options.LoggingChannelId = issueLogChannel.Id;
+                options.TrackerChannelId = dashboardChannel.Id;
+                options.ModeratorRoleId = modRole.Id;
+                options.VoterRoleId = voterRole.Id;
+                options.MinApprovalVotes = minVotes;
+                options.GithubRepository = githubRepository;
 
-            if (exists)
-            {
-                Context.Bot.DataStore.UpdateOptions(options);
-            }
-            else
-            {
-                Context.Bot.DataStore.CreateOptions(options);
-            }
+                if (existingOpts != null)
+                {
+                    DataStore.GuildOptions.Update(options);
+                }
+                else
+                {
+                    DataStore.GuildOptions.Add(options);
+                }
+                await DataStore.SaveChangesAsync();
 
+                await tx.CommitAsync();
+            }
             await Context.Channel.SendMessageAsync("Settings created or updated successfully");
         }
 
         [Group("channel")]
-        public class ChannelSetupModule : ModuleBase<BotCommandContext>
+        public class ChannelSetupModule : ModuleBase<SocketCommandContext>
         {
+            public BugBotDataContext DataStore { get; set; }
+
             [ModeratorRequired]
             [Command]
             [Summary("Sets up the current channel as a valid proposal channel")]
             public async Task Channel(IMessageChannel channel = null)
             {
                 channel ??= Context.Channel;
-                var options = Context.Bot.DataStore.GetOptions(Context.Guild.Id);
-                if (options is null) throw new CommandExecutionException("Please run `setup` before running this command");
-                options.AllowedChannels ??= new List<ulong>();
-                if (options.AllowedChannels.Contains(channel.Id)) throw new CommandExecutionException("That channel is already a proposal channel");
-                options.AllowedChannels.Add(channel.Id);
-                Context.Bot.DataStore.UpdateOptions(options);
+                DataStore.IssueChannels.Add(new GuildApprovedIssueChannel() { GuildId = Context.Guild.Id, ChannelId = channel.Id });
+                await DataStore.SaveChangesAsync();
                 await Context.Channel.SendMessageAsync("Channel set up successfully");
             }
 
@@ -82,11 +84,11 @@ namespace DiscordBugBot.Commands.Modules
             public async Task Remove(IMessageChannel channel = null)
             {
                 channel ??= Context.Channel;
-                var options = Context.Bot.DataStore.GetOptions(Context.Guild.Id);
-                if (options is null) throw new CommandExecutionException("Please run `setup` before running this command");
-                options.AllowedChannels ??= new List<ulong>();
-                if (!options.AllowedChannels.Remove(channel.Id)) throw new CommandExecutionException("That channel is not a proposal channel");
-                Context.Bot.DataStore.UpdateOptions(options);
+                // https://entityframeworkcore.com/knowledge-base/47813464/delete-loaded-and-unloaded-objects-by-id-in-entityframeworkcore
+                var instance = await DataStore.IssueChannels.SingleAsync(x => x.GuildId == Context.Guild.Id && x.ChannelId == channel.Id);
+                DataStore.Remove<GuildApprovedIssueChannel>(instance);
+                await DataStore.SaveChangesAsync();
+                //if (!options.AllowedChannels.Remove(channel.Id)) throw new CommandExecutionException("That channel is not a proposal channel");
                 await Context.Channel.SendMessageAsync("Channel removed successfully");
             }
         }

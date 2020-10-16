@@ -8,23 +8,30 @@ using Discord.WebSocket;
 using DiscordBugBot.Data;
 using DiscordBugBot.Models;
 using DiscordBugBot.Tools;
+using Microsoft.EntityFrameworkCore;
 
 namespace DiscordBugBot.Helpers
 {
-    public static class IssueConfirmationHelper
+    public class IssueConfirmationHelper
     {
-        private static IDataStore DataStore => DiscordBot.MainInstance.DataStore;
-        private static DiscordSocketClient Client => DiscordBot.MainInstance.Client;
+        private IssueHelper helper;
+        private BugBotDataContext dataStore;
 
-        public static async Task HandleMessageReaction(ISocketMessageChannel channel, SocketReaction reaction, IUserMessage message)
+        public IssueConfirmationHelper(BugBotDataContext dataStore, IssueHelper helper)
+        {
+            this.dataStore = dataStore;
+            this.helper = helper;
+        }
+
+        public async Task HandleMessageReaction(ISocketMessageChannel channel, SocketReaction reaction, IUserMessage message)
         {
             if ((reaction.User.GetValueOrDefault()?.IsBot ?? false) || !(channel is IGuildChannel gchannel)) return;
             ulong gid = gchannel.GuildId;
             ulong cid = channel.Id;
             ulong mid = message.Id;
 
-            var options = DataStore.GetOptions(gchannel.GuildId);
-            if (options?.AllowedChannels is null || !options.AllowedChannels.Contains(channel.Id)) return;
+            var options = await dataStore.GuildOptions.Include(g => g.AllowedChannels).SingleOrDefaultAsync(x => x.Id == gchannel.GuildId);
+            if (options?.AllowedChannels is null || !options.AllowedChannels.Any(x => x.ChannelId == channel.Id)) return;
             var user = reaction.User.Value as IGuildUser;
 
             (bool voter, bool mod) = GetVoterStatus(user, options);
@@ -34,13 +41,25 @@ namespace DiscordBugBot.Helpers
 
             if (category is null) return;
 
-            var props = DataStore.GetProposals(gid, cid, mid).ToList();
+            if (await ((IQueryable<Proposal>)dataStore.Proposals).AnyAsync(p => p.GuildId == gid && p.ChannelId == cid && p.MessageId == mid && p.Status == ProposalStatus.Approved)) return;
 
-            if (props.Any(p => p.Status == ProposalStatus.Approved)) return;
+            var proposal = dataStore.Proposals.FirstOrDefault(p => p.GuildId == gid && p.ChannelId == cid && p.MessageId == mid && p.CategoryId == category.Id);
+            if (proposal is null)
+            {
+                proposal = new Proposal
+                {
+                    GuildId = gid,
+                    ChannelId = cid,
+                    MessageId = mid,
+                    CategoryId = category.Id,
+                    Status = ProposalStatus.Proposed
+                };
+                dataStore.Add(proposal);
+            }
 
-            Proposal proposal = GetProposal(props, category, gid, cid, mid);
+            await UpdateProposals(channel, message, mod, proposal, options);
 
-            UpdateProposals(channel, message, mod, proposal, options, props);
+            await dataStore.SaveChangesAsync();
         }
 
         public static (bool voter, bool mod) GetVoterStatus(IGuildUser user, GuildOptions options)
@@ -60,56 +79,36 @@ namespace DiscordBugBot.Helpers
             return (voter, mod);
         }
 
-        private static IssueCategory GetCategory(SocketReaction reaction, ulong gid)
+        private IssueCategory GetCategory(SocketReaction reaction, ulong gid)
         {
-            var categories = DataStore.GetCategories(gid);
-            var category = categories.FirstOrDefault(c => c.EmojiIcon == reaction.Emote.ToString());
-            return category;
+            string emoteStr = reaction.Emote.ToString();
+            return dataStore.Categories.SingleOrDefault(c => c.GuildId == gid && c.EmojiIcon == emoteStr);
         }
 
-        private static Proposal GetProposal(List<Proposal> props, IssueCategory category, ulong gid, ulong cid, ulong mid)
-        {
-            var proposal = props.FirstOrDefault(p => p.Category == category.Name);
-            if (proposal is null)
-            {
-                proposal = new Proposal
-                {
-                    GuildId = gid,
-                    ChannelId = cid,
-                    MessageId = mid,
-                    Category = category.Name,
-                    Status = ProposalStatus.Proposed
-                };
-                DataStore.CreateProposal(proposal);
-            }
 
-            return proposal;
-        }
-
-        private static void UpdateProposals(
+        private async Task UpdateProposals(
             ISocketMessageChannel channel,
             IUserMessage message,
             bool mod,
             Proposal proposal,
-            GuildOptions options,
-            List<Proposal> props
+            GuildOptions options
         )
         {
             if (mod)
             {
                 proposal.Status = ProposalStatus.Approved;
-                _ = IssueModificationHelper.CreateIssue(proposal, channel, message, options);
+                await helper.CreateIssue(proposal, channel, message, options);
             }
             else
             {
                 proposal.ApprovalVotes++;
                 if (proposal.ApprovalVotes >= options.MinApprovalVotes)
                 {
-                    _ = IssueModificationHelper.CreateIssue(proposal, channel, message, options);
+                    await helper.CreateIssue(proposal, channel, message, options);
                 }
             }
 
-            DataStore.UpdateProposals(props);
+            dataStore.SaveChanges();
         }
     }
 }

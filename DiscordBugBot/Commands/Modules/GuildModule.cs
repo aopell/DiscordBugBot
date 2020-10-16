@@ -5,7 +5,7 @@ using System.Text;
 
 namespace DiscordBugBot.Commands.Modules
 {
-    public class GuildModule : ModuleBase<BotCommandContext>
+    public class GuildModule : ModuleBase<SocketCommandContext>
     {
 
     }

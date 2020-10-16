@@ -9,7 +9,7 @@ using DiscordBugBot.Helpers;
 namespace DiscordBugBot.Commands.Modules
 {
     [Group("help")]
-    public class HelpModule : ModuleBase<BotCommandContext>
+    public class HelpModule : ModuleBase<SocketCommandContext>
     {
         [Command]
         [Summary("Displays all available commands and how to use them")]
