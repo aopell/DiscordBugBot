@@ -9,8 +9,6 @@ namespace DiscordBugBot.Models
         public Guid Id { get; set; }
         public string Name { get; set; }
         public string Prefix { get; set; }
-        [Obsolete("Race conditions. Issue numbering scheme will be rennovated.")]
-        public int NextNumber { get; set; }
         public string EmojiIcon { get; set; }
         public bool Archived { get; set; }
 

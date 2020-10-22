@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Text;
 
 namespace DiscordBugBot.Models
@@ -8,14 +9,13 @@ namespace DiscordBugBot.Models
     public class Issue
     {
         public Guid Id { get; set; }
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        public int CategoryIssueNumber { get; set; }
         public ulong GuildId { get; set; }
         public ulong ChannelId { get; set; }
         public ulong MessageId { get; set; }
         public ulong LogMessageId { get; set; }
-        /// <summary>
-        /// A "friendly" CATEGORY-## identifier for the issue.
-        /// </summary>
-        public string Number { get; set; }
+        public string Number => $"{Category.Prefix}-{CategoryIssueNumber}";
         public string Title { get; set; }
         public string Description { get; set; }
         public ulong Author { get; set; }

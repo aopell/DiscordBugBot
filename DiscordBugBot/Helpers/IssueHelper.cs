@@ -30,8 +30,6 @@ namespace DiscordBugBot.Helpers
         public async Task CreateIssue(Proposal proposal, ISocketMessageChannel channel, IUserMessage message, GuildOptions options, string title = null, string description = null)
         {
             var category = proposal.Category ?? await dataStore.Categories.FindAsync(proposal.CategoryId);
-            int number = category.NextNumber;
-            category.NextNumber++;
             var now = DateTimeOffset.Now;
 
             var issue = new Issue
@@ -42,7 +40,6 @@ namespace DiscordBugBot.Helpers
                 Category = proposal.Category,
                 Status = IssueStatus.ToDo,
                 Title = title ?? "",
-                Number = $"{category.Prefix}-{number}",
                 Priority = IssuePriority.Low,
                 Assignee = null,
                 Author = message.Author.Id,
@@ -106,16 +103,7 @@ namespace DiscordBugBot.Helpers
 
             if (args.Category != null)
             {
-                category = dataStore.Categories.SingleOrDefault(c => c.GuildId == issue.GuildId && c.Name == args.Category);
-                if (category is null) throw new CommandExecutionException("Invalid value for `Category`");
-
-                string newNumber = $"{category.Prefix}-{category.NextNumber}";
-
-                category.NextNumber++;
-                await dataStore.SaveChangesAsync();
-
-                issue.CategoryId = category.Id;
-                issue.Number = newNumber;
+                throw new CommandExecutionException("Changing issue categories is not supported. Please close this issue and open another.");
             }
 
             await dataStore.SaveChangesAsync();

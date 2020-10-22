@@ -31,14 +31,13 @@ namespace DiscordBugBot.Commands.Modules
                 Prefix = prefix.ToUpper(),
                 EmojiIcon = emoji,
                 Archived = false,
-                GuildId = Context.Guild.Id,
-                NextNumber = 1
+                GuildId = Context.Guild.Id
             };
 
             DataStore.Add(category);
             DataStore.SaveChanges();
 
-            await Context.Channel.SendMessageAsync($"Category `{category.Name}` created. The first issue in this category will be {category.EmojiIcon} `{category.Prefix}-{category.NextNumber}`");
+            await Context.Channel.SendMessageAsync($"Category `{category.Name}` created. The first issue in this category will be {category.EmojiIcon} `{category.Prefix}-{category.Issues.Count + 1}`");
         }
 
         [VoterRequired]
@@ -51,7 +50,7 @@ namespace DiscordBugBot.Commands.Modules
                 "\n",
                 categories.Select(
                     c => (c.Archived ? "~~" : "") +
-                         $"{c.EmojiIcon} **{c.Name}**: Next issue is **{c.Prefix}-{c.NextNumber}**" +
+                         $"{c.EmojiIcon} **{c.Name}**: Next issue is **{c.Prefix}-{c.Issues.Count + 1}**" +
                          (c.Archived ? "~~ *(archived)*" : "")
                 )
             );

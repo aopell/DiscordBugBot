@@ -33,7 +33,11 @@ namespace DiscordBugBot.Data
                 .WithMany(c => c.Issues);
 
             modelBuilder.Entity<Issue>()
-                .HasIndex(i => new { i.GuildId, i.Number })
+                .Property(i => i.CategoryIssueNumber)
+                .HasDefaultValue(1);
+
+            modelBuilder.Entity<Issue>()
+                .HasIndex(i => i.GuildId)
                 .IsUnique();
 
             modelBuilder.Entity<Proposal>()
